@@ -27,7 +27,13 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Clarity",
+      "shortName": "Clarity",
+      "display": "standalone",
+      "backgroundColor": "#F7F7F7",
+      "startUrl": "/",
+      "themeColor": "#FF9F87"
     },
     "plugins": [
       "expo-router"
