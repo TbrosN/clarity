@@ -107,6 +107,23 @@ export default function ModalScreen() {
           </View>
         </View>
 
+        {/* Recommended Setup */}
+        <View className="mb-8">
+          <Text className="text-2xl font-bold text-[#2C3E50] mb-4">
+            📱 Recommended Setup
+          </Text>
+          <View className="bg-blue-50 p-4 rounded-2xl border border-blue-200">
+            <Text className="text-gray-700 text-base mb-2 font-semibold">
+              For the best experience:
+            </Text>
+            <Text className="text-gray-600 text-sm">
+              • <Text className="font-semibold">iOS:</Text> Add to Home Screen from Safari{'\n'}
+              • <Text className="font-semibold">Android:</Text> Install from Chrome{'\n'}
+              • <Text className="font-semibold">Desktop:</Text> Use Chrome or Edge
+            </Text>
+          </View>
+        </View>
+
         <Pressable
           className="bg-[#FF6B4A] py-5 rounded-2xl items-center mb-8"
           onPress={() => router.back()}

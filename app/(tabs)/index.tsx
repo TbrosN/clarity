@@ -1,7 +1,7 @@
 import { calculateRiskScore, generateInsights, Insight } from '@/services/InsightService';
 import { DailyLog, getDailyLog } from '@/services/StorageService';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Platform, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
@@ -33,6 +33,30 @@ export default function DashboardScreen() {
     }, [])
   );
 
+  // Listen for messages from service worker (notification actions)
+  useEffect(() => {
+    if (Platform.OS === 'web' && 'serviceWorker' in navigator) {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data && event.data.type === 'NOTIFICATION_ACTION') {
+          const { screen, autoSubmitValue } = event.data;
+          if (screen) {
+            // Navigate to the screen with auto-submit value if provided
+            const url = autoSubmitValue 
+              ? `${screen}&autoSubmit=${autoSubmitValue}`
+              : screen;
+            router.push(url as any);
+          }
+        }
+      };
+
+      navigator.serviceWorker.addEventListener('message', handleMessage);
+      
+      return () => {
+        navigator.serviceWorker.removeEventListener('message', handleMessage);
+      };
+    }
+  }, [router]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadData();
@@ -45,24 +69,39 @@ export default function DashboardScreen() {
         title: "☀️ Good morning!",
         body: "How's your skin today?",
         screen: '/check-in?type=acne',
+        actions: [
+          { action: '5', title: '✨ Glowing' },
+          { action: '3', title: '😐 Okay' },
+          { action: '1', title: '🚨 Breakout' },
+        ],
       },
       mood: {
         title: "😊 Mood check",
         body: "How are you feeling right now?",
         screen: '/check-in?type=mood',
+        actions: [
+          { action: '5', title: '🤩 Great' },
+          { action: '3', title: '😐 Okay' },
+          { action: '1', title: '😔 Low' },
+        ],
       },
       water: {
         title: "💧 Hydration check",
         body: "How much water have you had?",
         screen: '/quick-report?type=water',
+        actions: [
+          { action: '5', title: '🏊‍♀️ Hydrated!' },
+          { action: '3', title: '💦 Some' },
+          { action: '1', title: '🏜️ None' },
+        ],
       },
     };
 
     const config = notifications[type];
     
     if (Platform.OS === 'web') {
-      // On web, use native Web Notifications API
-      if ('Notification' in window) {
+      // On web, use Service Worker for better PWA support
+      if ('serviceWorker' in navigator && 'Notification' in window) {
         // Request permission if not already granted
         if (Notification.permission === 'default') {
           const permission = await Notification.requestPermission();
@@ -73,24 +112,42 @@ export default function DashboardScreen() {
         }
         
         if (Notification.permission === 'granted') {
-          // Create a web notification
-          const notification = new Notification(config.title, {
-            body: config.body,
-            icon: '/icon.png',
-            badge: '/icon.png',
-            tag: `clarity-${type}`,
-            requireInteraction: false,
-          });
-          
-          // Handle notification click
-          notification.onclick = () => {
-            window.focus();
-            router.push(config.screen as any);
-            notification.close();
-          };
-          
-          // Auto close after 10 seconds
-          setTimeout(() => notification.close(), 10000);
+          try {
+            // Register service worker if not already registered
+            let registration = await navigator.serviceWorker.getRegistration();
+            
+            if (!registration) {
+              registration = await navigator.serviceWorker.register('/service-worker.js');
+              await navigator.serviceWorker.ready;
+            }
+            
+            // Use service worker to show notification with actions
+            await registration.showNotification(config.title, {
+              body: config.body,
+              icon: '/icon.png',
+              badge: '/icon.png',
+              tag: `clarity-${type}`,
+              requireInteraction: false,
+              // @ts-ignore - actions are supported but TypeScript types are incomplete
+              actions: config.actions,
+              data: {
+                screen: config.screen,
+                type: type,
+              },
+            });
+          } catch (error) {
+            console.error('Service worker notification error:', error);
+            // Fallback to simple notification
+            const notification = new Notification(config.title, {
+              body: config.body,
+              icon: '/icon.png',
+            });
+            notification.onclick = () => {
+              window.focus();
+              router.push(config.screen as any);
+              notification.close();
+            };
+          }
         } else {
           alert('Notifications are blocked. Please enable them in your browser settings.');
         }
@@ -106,6 +163,7 @@ export default function DashboardScreen() {
           data: { screen: config.screen.split('?')[0].substring(1), type: type },
         },
         trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: 1, // Send in 1 second
         },
       });
@@ -285,6 +343,20 @@ export default function DashboardScreen() {
       {/* Debug Section */}
       <View className="bg-gray-100 p-4 rounded-2xl mb-6 border border-gray-200">
         <Text className="text-gray-600 font-bold text-sm mb-3 uppercase tracking-wider">Debug Tools</Text>
+        
+        <View className="bg-blue-50 p-3 rounded-xl mb-3 border border-blue-200">
+          <Text className="text-xs text-gray-700 mb-1">
+            <Text className="font-bold">💡 Recommended Setup:</Text>
+          </Text>
+          <Text className="text-xs text-gray-600">
+            📱 <Text className="font-semibold">iOS:</Text> Add to Home Screen from Safari{'\n'}
+            🤖 <Text className="font-semibold">Android:</Text> Install from Chrome{'\n'}
+            💻 <Text className="font-semibold">Desktop:</Text> Chrome or Edge for best experience{'\n'}
+            {'\n'}
+            <Text className="italic">Action buttons in notifications work on Chrome Android only</Text>
+          </Text>
+        </View>
+        
         <TouchableOpacity
           className="bg-blue-500 py-3 rounded-xl items-center mb-2"
           onPress={() => sendTestNotification('acne')}

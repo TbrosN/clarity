@@ -1,4 +1,5 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { saveDailyLog } from '../services/StorageService';
 import QuickReport, { ReportOption } from '../components/QuickReport';
 
@@ -68,8 +69,10 @@ const CHECK_IN_TYPES = {
 
 export default function CheckInScreen() {
   const params = useLocalSearchParams();
+  const router = useRouter();
   const checkInType = (params.type as keyof typeof CHECK_IN_TYPES) || 'acne';
   const config = CHECK_IN_TYPES[checkInType];
+  const autoSubmit = params.autoSubmit ? parseInt(params.autoSubmit as string) : null;
 
   const handleSubmit = async (value: number) => {
     const today = new Date().toISOString().split('T')[0];
@@ -78,6 +81,17 @@ export default function CheckInScreen() {
       [config.field]: value 
     });
   };
+
+  // Auto-submit if value was provided from notification action
+  useEffect(() => {
+    if (autoSubmit !== null) {
+      handleSubmit(autoSubmit).then(() => {
+        setTimeout(() => {
+          router.back();
+        }, 600);
+      });
+    }
+  }, [autoSubmit]);
 
   return (
     <QuickReport

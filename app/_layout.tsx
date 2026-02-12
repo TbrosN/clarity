@@ -1,26 +1,31 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack, router } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
-import 'react-native-reanimated';
-import '../global.css';
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { useFonts } from "expo-font";
+import { Stack, router } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import "react-native-reanimated";
+import "../global.css";
 
-import InstallPWA from '@/components/InstallPWA';
-import { useColorScheme } from '@/components/useColorScheme';
-import * as Notifications from 'expo-notifications';
-import { requestPermissions, scheduleDailyPrompts } from '../services/NotificationService';
+import { useColorScheme } from "@/components/useColorScheme";
+import * as Notifications from "expo-notifications";
+import {
+  requestPermissions,
+  scheduleDailyPrompts,
+} from "../services/NotificationService";
 
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary
-} from 'expo-router';
+} from "expo-router";
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: "(tabs)",
 };
 
 // Prevent the splash screen from automatic hiding
@@ -28,7 +33,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     ...FontAwesome.font,
   });
 
@@ -53,19 +58,20 @@ export default function RootLayout() {
 
     setupNotifications();
 
-    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data;
-      const screen = data.screen;
-      const type = data.type;
-      
-      if (screen === 'check-in') {
-        router.push(type ? `/check-in?type=${type}` : '/check-in');
-      } else if (screen === 'quick-report') {
-        router.push(type ? `/quick-report?type=${type}` : '/quick-report');
-      } else if (screen === 'wind-down') {
-        router.push('/wind-down');
-      }
-    });
+    const responseListener =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        const data = response.notification.request.content.data;
+        const screen = data.screen;
+        const type = data.type;
+
+        if (screen === "check-in") {
+          router.push(type ? `/check-in?type=${type}` : "/check-in");
+        } else if (screen === "quick-report") {
+          router.push(type ? `/quick-report?type=${type}` : "/quick-report");
+        } else if (screen === "wind-down") {
+          router.push("/wind-down");
+        }
+      });
 
     return () => {
       responseListener.remove();
@@ -76,22 +82,17 @@ export default function RootLayout() {
     return null;
   }
 
-  return (
-    <>
-      <RootLayoutNav />
-      {Platform.OS === 'web' && <InstallPWA />}
-    </>
-  );
+  return <RootLayoutNav />;
 }
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
       </Stack>
     </ThemeProvider>
   );
