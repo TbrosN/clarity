@@ -53,3 +53,18 @@ export const getRecentLogs = async (days: number = 14): Promise<DailyLog[]> => {
     return [];
   }
 }
+
+
+export const getHasAddedToHomeScreen = async (): Promise<boolean> => {
+  try {
+    // Only check if running in standalone mode (PWA installed)
+    if (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) {
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.error('Failed to check home screen status', e);
+    return false;
+  }
+};
+

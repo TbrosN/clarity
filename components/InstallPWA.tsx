@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Modal, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { getHasAddedToHomeScreen } from '../services/StorageService';
 
 export default function InstallPWA() {
   const [showInstall, setShowInstall] = useState(false);
@@ -10,15 +11,19 @@ export default function InstallPWA() {
     // Only on web
     if (Platform.OS !== 'web') return;
 
-    // Check if standalone
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    const checkInstallStatus = async () => {
+      // Check if already installed (standalone mode)
+      const isInstalled = await getHasAddedToHomeScreen();
 
-    if (!isStandalone) {
-      // Simple delay to not annoy immediately
-      setTimeout(() => {
-        setShowInstall(true);
-      }, 2000);
-    }
+      if (!isInstalled) {
+        // Simple delay to not annoy immediately
+        setTimeout(() => {
+          setShowInstall(true);
+        }, 2000);
+      }
+    };
+
+    checkInstallStatus();
 
     setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream);
   }, []);
@@ -56,13 +61,6 @@ export default function InstallPWA() {
               Tap the menu icon and select "Install App" or "Add to Home Screen".
             </Text>
           )}
-
-          <TouchableOpacity
-            className="mt-6 bg-[#2C3E50] py-3 rounded-xl items-center"
-            onPress={() => setShowInstall(false)}
-          >
-            <Text className="text-white font-bold">Got it</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </Modal>
