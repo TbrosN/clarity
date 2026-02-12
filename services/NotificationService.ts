@@ -32,12 +32,12 @@ export const scheduleDailyPrompts = async () => {
   // Cancel all existing to avoid duplicates during dev
   await Notifications.cancelAllScheduledNotificationsAsync();
 
-  // Morning Glow Check (8:00 AM)
+  // Morning Wake Check (8:00 AM)
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "☀️ Morning Glow Check",
-      body: "How is your skin feeling today?",
-      data: { screen: 'check-in' },
+      title: "☀️ Good morning!",
+      body: "How's your skin today?",
+      data: { screen: 'check-in', type: 'acne' },
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
@@ -47,11 +47,86 @@ export const scheduleDailyPrompts = async () => {
     },
   });
 
-  // Evening Wind Down (9:30 PM)
+  // Mid-Morning Energy Check (10:30 AM)
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "⚡ Energy check",
+      body: "How are you feeling?",
+      data: { screen: 'check-in', type: 'energy' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      hour: 10,
+      minute: 30,
+      repeats: true,
+    },
+  });
+
+  // Lunch Hydration Reminder (12:30 PM)
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "💧 Hydration check",
+      body: "How much water have you had?",
+      data: { screen: 'quick-report', type: 'water' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      hour: 12,
+      minute: 30,
+      repeats: true,
+    },
+  });
+
+  // Afternoon Mood Check (3:00 PM)
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "😊 Mood check",
+      body: "How are you feeling right now?",
+      data: { screen: 'check-in', type: 'mood' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      hour: 15,
+      minute: 0,
+      repeats: true,
+    },
+  });
+
+  // Evening Stress Check (6:00 PM)
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "🧘‍♀️ Stress check",
+      body: "How stressed are you feeling?",
+      data: { screen: 'check-in', type: 'stress' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      hour: 18,
+      minute: 0,
+      repeats: true,
+    },
+  });
+
+  // Evening Sugar Check (8:00 PM)
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "🍪 Sugar intake",
+      body: "How much sugar did you have today?",
+      data: { screen: 'quick-report', type: 'sugar' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      hour: 20,
+      minute: 0,
+      repeats: true,
+    },
+  });
+
+  // Bedtime Wind Down (9:30 PM)
   await Notifications.scheduleNotificationAsync({
     content: {
       title: "🌙 Ready to recharge?",
-      body: "Log your wind-down for better skin tomorrow.",
+      body: "Time to wind down for better skin tomorrow.",
       data: { screen: 'wind-down' },
     },
     trigger: {
@@ -62,5 +137,5 @@ export const scheduleDailyPrompts = async () => {
     },
   });
 
-  console.log('Daily prompts scheduled');
+  console.log('Daily prompts scheduled - 7 check-ins throughout the day');
 };

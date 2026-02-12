@@ -2,11 +2,30 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type DailyLog = {
   date: string; // YYYY-MM-DD
+  
+  // Sleep tracking
+  wakeTime?: string; // ISO timestamp
   bedtime?: string; // ISO timestamp
+  sleepQuality?: number; // 1-5 Likert scale
+  
+  // Skin & Physical
+  acneLevel?: number; // 1 (Clear) - 5 (Total breakout)
+  skinFeeling?: number; // 1 (Bad) - 5 (Glowing)
+  
+  // Energy & Mood
+  energyLevel?: number; // 1 (Exhausted) - 5 (Energized)
+  mood?: number; // 1 (Low) - 5 (Great)
+  stress?: number; // 1 (Zen) - 5 (Frazzled)
+  
+  // Diet & Habits
+  lastMealTime?: string; // ISO timestamp
+  sugarIntake?: number; // 1 (None) - 5 (Lots)
+  waterIntake?: number; // 1 (Little) - 5 (Hydrated)
+  
+  // Legacy fields
   sugar?: 'clean' | 'treat';
-  stress?: number; // 1 (Zen) - 5 (Fried)
   cleansed?: boolean;
-  skinRating?: number; // 1 (Bad) - 5 (Glowing)
+  skinRating?: number; // Deprecated, use skinFeeling
 };
 
 const STORAGE_KEY_PREFIX = '@clarity_log_';

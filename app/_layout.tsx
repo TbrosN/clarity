@@ -54,9 +54,14 @@ export default function RootLayout() {
     setupNotifications();
 
     const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      const screen = response.notification.request.content.data.screen;
+      const data = response.notification.request.content.data;
+      const screen = data.screen;
+      const type = data.type;
+      
       if (screen === 'check-in') {
-        router.push('/check-in');
+        router.push(type ? `/check-in?type=${type}` : '/check-in');
+      } else if (screen === 'quick-report') {
+        router.push(type ? `/quick-report?type=${type}` : '/quick-report');
       } else if (screen === 'wind-down') {
         router.push('/wind-down');
       }

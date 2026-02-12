@@ -2,7 +2,8 @@ import { calculateRiskScore, generateInsights, Insight } from '@/services/Insigh
 import { DailyLog, getDailyLog } from '@/services/StorageService';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import * as Notifications from 'expo-notifications';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -38,6 +39,79 @@ export default function DashboardScreen() {
     setRefreshing(false);
   }, []);
 
+  const sendTestNotification = async (type: 'acne' | 'mood' | 'water') => {
+    const notifications = {
+      acne: {
+        title: "☀️ Good morning!",
+        body: "How's your skin today?",
+        screen: '/check-in?type=acne',
+      },
+      mood: {
+        title: "😊 Mood check",
+        body: "How are you feeling right now?",
+        screen: '/check-in?type=mood',
+      },
+      water: {
+        title: "💧 Hydration check",
+        body: "How much water have you had?",
+        screen: '/quick-report?type=water',
+      },
+    };
+
+    const config = notifications[type];
+    
+    if (Platform.OS === 'web') {
+      // On web, use native Web Notifications API
+      if ('Notification' in window) {
+        // Request permission if not already granted
+        if (Notification.permission === 'default') {
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+            alert('Please enable notifications to test this feature');
+            return;
+          }
+        }
+        
+        if (Notification.permission === 'granted') {
+          // Create a web notification
+          const notification = new Notification(config.title, {
+            body: config.body,
+            icon: '/icon.png',
+            badge: '/icon.png',
+            tag: `clarity-${type}`,
+            requireInteraction: false,
+          });
+          
+          // Handle notification click
+          notification.onclick = () => {
+            window.focus();
+            router.push(config.screen as any);
+            notification.close();
+          };
+          
+          // Auto close after 10 seconds
+          setTimeout(() => notification.close(), 10000);
+        } else {
+          alert('Notifications are blocked. Please enable them in your browser settings.');
+        }
+      } else {
+        alert('This browser does not support notifications');
+      }
+    } else {
+      // On native, send actual notification
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: config.title,
+          body: config.body,
+          data: { screen: config.screen.split('?')[0].substring(1), type: type },
+        },
+        trigger: {
+          seconds: 1, // Send in 1 second
+        },
+      });
+    }
+  };
+
   return (
     <ScrollView
       className="flex-1 bg-[#F7F7F7]"
@@ -46,8 +120,35 @@ export default function DashboardScreen() {
     >
       {/* Header */}
       <View className="mb-8">
-        <Text className="text-gray-500 text-lg font-medium">Today's Focus</Text>
-        <Text className="text-4xl font-bold text-[#2C3E50]">Clarity</Text>
+        <View className="flex-row justify-between items-start">
+          <View className="flex-1">
+            <Text className="text-gray-500 text-lg font-medium">Today's Focus</Text>
+            <Text className="text-4xl font-bold text-[#2C3E50]">Clarity</Text>
+          </View>
+          <Link href="/modal" asChild>
+            <TouchableOpacity className="bg-gray-100 w-10 h-10 rounded-full items-center justify-center">
+              <Text className="text-lg">💡</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+        
+        {/* Quick Stats */}
+        {todayLog && (
+          <View className="mt-4 flex-row items-center">
+            <Text className="text-gray-500 text-sm">
+              {[
+                todayLog.acneLevel,
+                todayLog.mood,
+                todayLog.energyLevel,
+                todayLog.stress,
+                todayLog.waterIntake,
+                todayLog.sugarIntake,
+                todayLog.sleepQuality,
+                todayLog.bedtime,
+              ].filter(Boolean).length} check-ins completed today ✓
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Risk Meter */}
@@ -57,37 +158,110 @@ export default function DashboardScreen() {
         <Text className="text-gray-400 text-sm mt-2">Based on your recent sleep and stress.</Text>
       </View>
 
-      {/* Daily Actions */}
-      <View className="flex-row gap-4 mb-8">
-        {/* Morning Check-in */}
-        <TouchableOpacity
-          className={`flex-1 p-5 rounded-3xl justify-between h-40 ${todayLog?.skinRating ? 'bg-[#E8F8F5]' : 'bg-white shadow-sm'}`}
-          onPress={() => router.push('/check-in')}
-          disabled={!!todayLog?.skinRating}
-        >
-          <View>
-            <Text className="text-2xl mb-1">☀️</Text>
-            <Text className="font-bold text-[#2C3E50] text-lg">Morning Check</Text>
-          </View>
-          <Text className="text-gray-500 font-medium">
-            {todayLog?.skinRating ? 'Completed' : 'Tap to Log'}
-          </Text>
-        </TouchableOpacity>
+      {/* Quick Reports - Waze Style */}
+      <View className="bg-white p-6 rounded-3xl shadow-sm mb-6 border border-gray-100">
+        <Text className="text-gray-800 font-bold text-xl mb-4">What do you want to report? 📊</Text>
+        
+        <View className="flex-row flex-wrap gap-4">
+          {/* Acne Check */}
+          <TouchableOpacity
+            className="w-[30%] items-center"
+            onPress={() => router.push('/check-in?type=acne')}
+          >
+            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.acneLevel ? 'bg-[#E8F8F5]' : 'bg-gray-50'}`}>
+              <Text className="text-3xl">🪞</Text>
+            </View>
+            <Text className="text-gray-600 text-xs font-medium text-center">Skin</Text>
+          </TouchableOpacity>
 
-        {/* Evening Wind-down */}
-        <TouchableOpacity
-          className={`flex-1 p-5 rounded-3xl justify-between h-40 ${todayLog?.bedtime ? 'bg-[#EBDEF0]' : 'bg-white shadow-sm'}`}
-          onPress={() => router.push('/wind-down')}
-          disabled={!!todayLog?.bedtime}
-        >
-          <View>
-            <Text className="text-2xl mb-1">🌙</Text>
-            <Text className="font-bold text-[#2C3E50] text-lg">Wind Down</Text>
-          </View>
-          <Text className="text-gray-500 font-medium">
-            {todayLog?.bedtime ? 'Completed' : 'Tap to Log'}
-          </Text>
-        </TouchableOpacity>
+          {/* Mood */}
+          <TouchableOpacity
+            className="w-[30%] items-center"
+            onPress={() => router.push('/check-in?type=mood')}
+          >
+            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.mood ? 'bg-[#FFF5EB]' : 'bg-gray-50'}`}>
+              <Text className="text-3xl">😊</Text>
+            </View>
+            <Text className="text-gray-600 text-xs font-medium text-center">Mood</Text>
+          </TouchableOpacity>
+
+          {/* Energy */}
+          <TouchableOpacity
+            className="w-[30%] items-center"
+            onPress={() => router.push('/check-in?type=energy')}
+          >
+            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.energyLevel ? 'bg-[#FFF9E6]' : 'bg-gray-50'}`}>
+              <Text className="text-3xl">⚡</Text>
+            </View>
+            <Text className="text-gray-600 text-xs font-medium text-center">Energy</Text>
+          </TouchableOpacity>
+
+          {/* Stress */}
+          <TouchableOpacity
+            className="w-[30%] items-center"
+            onPress={() => router.push('/check-in?type=stress')}
+          >
+            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.stress ? 'bg-[#F0E6FF]' : 'bg-gray-50'}`}>
+              <Text className="text-3xl">🧘‍♀️</Text>
+            </View>
+            <Text className="text-gray-600 text-xs font-medium text-center">Stress</Text>
+          </TouchableOpacity>
+
+          {/* Water */}
+          <TouchableOpacity
+            className="w-[30%] items-center"
+            onPress={() => router.push('/quick-report?type=water')}
+          >
+            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.waterIntake ? 'bg-[#E6F7FF]' : 'bg-gray-50'}`}>
+              <Text className="text-3xl">💧</Text>
+            </View>
+            <Text className="text-gray-600 text-xs font-medium text-center">Water</Text>
+          </TouchableOpacity>
+
+          {/* Sugar */}
+          <TouchableOpacity
+            className="w-[30%] items-center"
+            onPress={() => router.push('/quick-report?type=sugar')}
+          >
+            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.sugarIntake ? 'bg-[#FFE6F0]' : 'bg-gray-50'}`}>
+              <Text className="text-3xl">🍪</Text>
+            </View>
+            <Text className="text-gray-600 text-xs font-medium text-center">Sugar</Text>
+          </TouchableOpacity>
+
+          {/* Sleep Quality */}
+          <TouchableOpacity
+            className="w-[30%] items-center"
+            onPress={() => router.push('/check-in?type=sleep')}
+          >
+            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.sleepQuality ? 'bg-[#EBDEF0]' : 'bg-gray-50'}`}>
+              <Text className="text-3xl">💤</Text>
+            </View>
+            <Text className="text-gray-600 text-xs font-medium text-center">Sleep</Text>
+          </TouchableOpacity>
+
+          {/* Meal Time */}
+          <TouchableOpacity
+            className="w-[30%] items-center"
+            onPress={() => router.push('/quick-report?type=meal')}
+          >
+            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.lastMealTime ? 'bg-[#FFF5E6]' : 'bg-gray-50'}`}>
+              <Text className="text-3xl">🍽️</Text>
+            </View>
+            <Text className="text-gray-600 text-xs font-medium text-center">Meal</Text>
+          </TouchableOpacity>
+
+          {/* Bedtime */}
+          <TouchableOpacity
+            className="w-[30%] items-center"
+            onPress={() => router.push('/wind-down')}
+          >
+            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.bedtime ? 'bg-[#E8F8F5]' : 'bg-gray-50'}`}>
+              <Text className="text-3xl">🌙</Text>
+            </View>
+            <Text className="text-gray-600 text-xs font-medium text-center">Bedtime</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Insights */}
@@ -107,6 +281,29 @@ export default function DashboardScreen() {
           ))}
         </View>
       )}
+
+      {/* Debug Section */}
+      <View className="bg-gray-100 p-4 rounded-2xl mb-6 border border-gray-200">
+        <Text className="text-gray-600 font-bold text-sm mb-3 uppercase tracking-wider">Debug Tools</Text>
+        <TouchableOpacity
+          className="bg-blue-500 py-3 rounded-xl items-center mb-2"
+          onPress={() => sendTestNotification('acne')}
+        >
+          <Text className="text-white font-semibold">🔔 Send Skin Check-In Notification</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="bg-purple-500 py-3 rounded-xl items-center mb-2"
+          onPress={() => sendTestNotification('mood')}
+        >
+          <Text className="text-white font-semibold">🔔 Send Mood Check Notification</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="bg-green-500 py-3 rounded-xl items-center"
+          onPress={() => sendTestNotification('water')}
+        >
+          <Text className="text-white font-semibold">🔔 Send Hydration Notification</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* History Link (Placeholder for Tab 2) */}
       <Link href="/(tabs)/two" asChild>

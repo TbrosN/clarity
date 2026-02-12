@@ -1,52 +1,91 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { saveDailyLog } from '../services/StorageService';
+import QuickReport, { ReportOption } from '../components/QuickReport';
 
-const RATINGS = [
-  { value: 1, label: "🚨", text: "Breakout" },
-  { value: 2, label: "☁️", text: "Cloudy" },
-  { value: 3, label: "😐", text: "Okay" },
-  { value: 4, label: "🌤️", text: "Better" },
-  { value: 5, label: "✨", text: "Glowing" },
-];
+// Define different check-in types
+const CHECK_IN_TYPES = {
+  acne: {
+    title: "How's your skin? 🪞",
+    subtitle: "Quick check-in",
+    options: [
+      { value: 1, emoji: "✨", label: "Clear" },
+      { value: 2, emoji: "🌤️", label: "Good" },
+      { value: 3, emoji: "😐", label: "Few spots" },
+      { value: 4, emoji: "☁️", label: "Breaking out" },
+      { value: 5, emoji: "🚨", label: "Major breakout" },
+    ] as ReportOption[],
+    field: 'acneLevel' as const,
+  },
+  mood: {
+    title: "How are you feeling? 😊",
+    subtitle: "Check in with yourself",
+    options: [
+      { value: 1, emoji: "😔", label: "Low" },
+      { value: 2, emoji: "😕", label: "Meh" },
+      { value: 3, emoji: "😐", label: "Okay" },
+      { value: 4, emoji: "😊", label: "Good" },
+      { value: 5, emoji: "🤩", label: "Great" },
+    ] as ReportOption[],
+    field: 'mood' as const,
+  },
+  energy: {
+    title: "What's your energy? ⚡",
+    subtitle: "How are you feeling right now?",
+    options: [
+      { value: 1, emoji: "🪫", label: "Drained" },
+      { value: 2, emoji: "😴", label: "Tired" },
+      { value: 3, emoji: "😐", label: "Okay" },
+      { value: 4, emoji: "🙂", label: "Good" },
+      { value: 5, emoji: "⚡", label: "Energized" },
+    ] as ReportOption[],
+    field: 'energyLevel' as const,
+  },
+  stress: {
+    title: "Stress check 🧘‍♀️",
+    subtitle: "How stressed do you feel?",
+    options: [
+      { value: 1, emoji: "🧘‍♀️", label: "Zen" },
+      { value: 2, emoji: "😌", label: "Calm" },
+      { value: 3, emoji: "😐", label: "Okay" },
+      { value: 4, emoji: "😰", label: "Stressed" },
+      { value: 5, emoji: "🤯", label: "Frazzled" },
+    ] as ReportOption[],
+    field: 'stress' as const,
+  },
+  sleep: {
+    title: "How did you sleep? 💤",
+    subtitle: "Sleep quality check",
+    options: [
+      { value: 1, emoji: "😫", label: "Awful" },
+      { value: 2, emoji: "😴", label: "Poor" },
+      { value: 3, emoji: "😐", label: "Okay" },
+      { value: 4, emoji: "😊", label: "Good" },
+      { value: 5, emoji: "✨", label: "Amazing" },
+    ] as ReportOption[],
+    field: 'sleepQuality' as const,
+  },
+};
 
 export default function CheckInScreen() {
-  const router = useRouter();
-  const [selected, setSelected] = useState<number | null>(null);
+  const params = useLocalSearchParams();
+  const checkInType = (params.type as keyof typeof CHECK_IN_TYPES) || 'acne';
+  const config = CHECK_IN_TYPES[checkInType];
 
-  const handleSave = async (rating: number) => {
-    setSelected(rating);
+  const handleSubmit = async (value: number) => {
     const today = new Date().toISOString().split('T')[0];
-    await saveDailyLog({ date: today, skinRating: rating });
-
-    // Simulate "Instant Reward" delay then close
-    setTimeout(() => {
-      router.push('../'); // Go back to tabs (dashboard)
-    }, 600);
+    await saveDailyLog({ 
+      date: today, 
+      [config.field]: value 
+    });
   };
 
   return (
-    <View className="flex-1 items-center justify-center bg-[#F7F7F7] p-6">
-      <Text className="text-3xl font-bold text-gray-800 mb-2">Good Morning! ☀️</Text>
-      <Text className="text-lg text-gray-500 mb-10 text-center">How is your skin feeling today?</Text>
-
-      <View className="flex-row flex-wrap justify-between gap-4 w-full px-4">
-        {RATINGS.map((item) => (
-          <Pressable
-            key={item.value}
-            onPress={() => handleSave(item.value)}
-            className={`w-[45%] aspect-square items-center justify-center rounded-2xl bg-white shadow-sm border-2 ${selected === item.value ? 'border-brand-primary bg-orange-50' : 'border-transparent'}`}
-          >
-            <Text className="text-4xl mb-2">{item.label}</Text>
-            <Text className="text-gray-600 font-medium">{item.text}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <TouchableOpacity onPress={() => router.back()} className="mt-12">
-        <Text className="text-gray-400 text-sm">Skip for now</Text>
-      </TouchableOpacity>
-    </View>
+    <QuickReport
+      title={config.title}
+      subtitle={config.subtitle}
+      options={config.options}
+      onSubmit={handleSubmit}
+      layout="grid"
+    />
   );
 }
