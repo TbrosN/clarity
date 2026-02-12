@@ -41,7 +41,7 @@ export default function DashboardScreen() {
           const { screen, autoSubmitValue } = event.data;
           if (screen) {
             // Navigate to the screen with auto-submit value if provided
-            const url = autoSubmitValue 
+            const url = autoSubmitValue
               ? `${screen}&autoSubmit=${autoSubmitValue}`
               : screen;
             router.push(url as any);
@@ -50,7 +50,7 @@ export default function DashboardScreen() {
       };
 
       navigator.serviceWorker.addEventListener('message', handleMessage);
-      
+
       return () => {
         navigator.serviceWorker.removeEventListener('message', handleMessage);
       };
@@ -63,7 +63,7 @@ export default function DashboardScreen() {
     setRefreshing(false);
   }, []);
 
-  const sendTestNotification = async (type: 'acne' | 'mood' | 'water') => {
+  const sendTestNotification = async (type: 'acne' | 'stress' | 'sugar') => {
     const notifications = {
       acne: {
         title: "☀️ Good morning!",
@@ -75,30 +75,30 @@ export default function DashboardScreen() {
           { action: '1', title: '🚨 Breakout' },
         ],
       },
-      mood: {
-        title: "😊 Mood check",
-        body: "How are you feeling right now?",
-        screen: '/check-in?type=mood',
+      stress: {
+        title: "🧘‍♀️ Stress check",
+        body: "How stressed do you feel?",
+        screen: '/check-in?type=stress',
         actions: [
-          { action: '5', title: '🤩 Great' },
+          { action: '1', title: '🧘‍♀️ Zen' },
           { action: '3', title: '😐 Okay' },
-          { action: '1', title: '😔 Low' },
+          { action: '5', title: '🤯 Frazzled' },
         ],
       },
-      water: {
-        title: "💧 Hydration check",
-        body: "How much water have you had?",
-        screen: '/quick-report?type=water',
+      sugar: {
+        title: "🍪 Sugar intake",
+        body: "How much sugar/carbs today?",
+        screen: '/quick-report?type=sugar',
         actions: [
-          { action: '5', title: '🏊‍♀️ Hydrated!' },
-          { action: '3', title: '💦 Some' },
-          { action: '1', title: '🏜️ None' },
+          { action: '1', title: '✨ Clean' },
+          { action: '3', title: '😐 Moderate' },
+          { action: '5', title: '🍰 Lots' },
         ],
       },
     };
 
     const config = notifications[type];
-    
+
     if (Platform.OS === 'web') {
       // On web, use Service Worker for better PWA support
       if ('serviceWorker' in navigator && 'Notification' in window) {
@@ -110,17 +110,17 @@ export default function DashboardScreen() {
             return;
           }
         }
-        
+
         if (Notification.permission === 'granted') {
           try {
             // Register service worker if not already registered
             let registration = await navigator.serviceWorker.getRegistration();
-            
+
             if (!registration) {
               registration = await navigator.serviceWorker.register('/service-worker.js');
               await navigator.serviceWorker.ready;
             }
-            
+
             // Use service worker to show notification with actions
             await registration.showNotification(config.title, {
               body: config.body,
@@ -189,20 +189,17 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </Link>
         </View>
-        
+
         {/* Quick Stats */}
         {todayLog && (
           <View className="mt-4 flex-row items-center">
             <Text className="text-gray-500 text-sm">
               {[
                 todayLog.acneLevel,
-                todayLog.mood,
-                todayLog.energyLevel,
-                todayLog.stress,
-                todayLog.waterIntake,
                 todayLog.sugarIntake,
+                todayLog.stress,
                 todayLog.sleepQuality,
-                todayLog.bedtime,
+                todayLog.touchHygiene,
               ].filter(Boolean).length} check-ins completed today ✓
             </Text>
           </View>
@@ -219,9 +216,9 @@ export default function DashboardScreen() {
       {/* Quick Reports - Waze Style */}
       <View className="bg-white p-6 rounded-3xl shadow-sm mb-6 border border-gray-100">
         <Text className="text-gray-800 font-bold text-xl mb-4">What do you want to report? 📊</Text>
-        
+
         <View className="flex-row flex-wrap gap-4">
-          {/* Acne Check */}
+          {/* Skin - The Outcome */}
           <TouchableOpacity
             className="w-[30%] items-center"
             onPress={() => router.push('/check-in?type=acne')}
@@ -232,51 +229,7 @@ export default function DashboardScreen() {
             <Text className="text-gray-600 text-xs font-medium text-center">Skin</Text>
           </TouchableOpacity>
 
-          {/* Mood */}
-          <TouchableOpacity
-            className="w-[30%] items-center"
-            onPress={() => router.push('/check-in?type=mood')}
-          >
-            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.mood ? 'bg-[#FFF5EB]' : 'bg-gray-50'}`}>
-              <Text className="text-3xl">😊</Text>
-            </View>
-            <Text className="text-gray-600 text-xs font-medium text-center">Mood</Text>
-          </TouchableOpacity>
-
-          {/* Energy */}
-          <TouchableOpacity
-            className="w-[30%] items-center"
-            onPress={() => router.push('/check-in?type=energy')}
-          >
-            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.energyLevel ? 'bg-[#FFF9E6]' : 'bg-gray-50'}`}>
-              <Text className="text-3xl">⚡</Text>
-            </View>
-            <Text className="text-gray-600 text-xs font-medium text-center">Energy</Text>
-          </TouchableOpacity>
-
-          {/* Stress */}
-          <TouchableOpacity
-            className="w-[30%] items-center"
-            onPress={() => router.push('/check-in?type=stress')}
-          >
-            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.stress ? 'bg-[#F0E6FF]' : 'bg-gray-50'}`}>
-              <Text className="text-3xl">🧘‍♀️</Text>
-            </View>
-            <Text className="text-gray-600 text-xs font-medium text-center">Stress</Text>
-          </TouchableOpacity>
-
-          {/* Water */}
-          <TouchableOpacity
-            className="w-[30%] items-center"
-            onPress={() => router.push('/quick-report?type=water')}
-          >
-            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.waterIntake ? 'bg-[#E6F7FF]' : 'bg-gray-50'}`}>
-              <Text className="text-3xl">💧</Text>
-            </View>
-            <Text className="text-gray-600 text-xs font-medium text-center">Water</Text>
-          </TouchableOpacity>
-
-          {/* Sugar */}
+          {/* Sugar/Carbs - The Fuel */}
           <TouchableOpacity
             className="w-[30%] items-center"
             onPress={() => router.push('/quick-report?type=sugar')}
@@ -287,7 +240,18 @@ export default function DashboardScreen() {
             <Text className="text-gray-600 text-xs font-medium text-center">Sugar</Text>
           </TouchableOpacity>
 
-          {/* Sleep Quality */}
+          {/* Stress - The Internal Traffic */}
+          <TouchableOpacity
+            className="w-[30%] items-center"
+            onPress={() => router.push('/check-in?type=stress')}
+          >
+            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.stress ? 'bg-[#F0E6FF]' : 'bg-gray-50'}`}>
+              <Text className="text-3xl">🧘‍♀️</Text>
+            </View>
+            <Text className="text-gray-600 text-xs font-medium text-center">Stress</Text>
+          </TouchableOpacity>
+
+          {/* Sleep - The Recovery */}
           <TouchableOpacity
             className="w-[30%] items-center"
             onPress={() => router.push('/check-in?type=sleep')}
@@ -298,26 +262,15 @@ export default function DashboardScreen() {
             <Text className="text-gray-600 text-xs font-medium text-center">Sleep</Text>
           </TouchableOpacity>
 
-          {/* Meal Time */}
+          {/* Touch/Hygiene - The Hazard */}
           <TouchableOpacity
             className="w-[30%] items-center"
-            onPress={() => router.push('/quick-report?type=meal')}
+            onPress={() => router.push('/check-in?type=touch')}
           >
-            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.lastMealTime ? 'bg-[#FFF5E6]' : 'bg-gray-50'}`}>
-              <Text className="text-3xl">🍽️</Text>
+            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.touchHygiene ? 'bg-[#FFF5E6]' : 'bg-gray-50'}`}>
+              <Text className="text-3xl">🖐️</Text>
             </View>
-            <Text className="text-gray-600 text-xs font-medium text-center">Meal</Text>
-          </TouchableOpacity>
-
-          {/* Bedtime */}
-          <TouchableOpacity
-            className="w-[30%] items-center"
-            onPress={() => router.push('/wind-down')}
-          >
-            <View className={`w-full aspect-square items-center justify-center rounded-2xl mb-2 ${todayLog?.bedtime ? 'bg-[#E8F8F5]' : 'bg-gray-50'}`}>
-              <Text className="text-3xl">🌙</Text>
-            </View>
-            <Text className="text-gray-600 text-xs font-medium text-center">Bedtime</Text>
+            <Text className="text-gray-600 text-xs font-medium text-center">Touch</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -343,7 +296,7 @@ export default function DashboardScreen() {
       {/* Debug Section */}
       <View className="bg-gray-100 p-4 rounded-2xl mb-6 border border-gray-200">
         <Text className="text-gray-600 font-bold text-sm mb-3 uppercase tracking-wider">Debug Tools</Text>
-        
+
         <View className="bg-blue-50 p-3 rounded-xl mb-3 border border-blue-200">
           <Text className="text-xs text-gray-700 mb-1">
             <Text className="font-bold">💡 Recommended Setup:</Text>
@@ -356,7 +309,7 @@ export default function DashboardScreen() {
             <Text className="italic">Action buttons in notifications work on Chrome Android only</Text>
           </Text>
         </View>
-        
+
         <TouchableOpacity
           className="bg-blue-500 py-3 rounded-xl items-center mb-2"
           onPress={() => sendTestNotification('acne')}
@@ -365,15 +318,15 @@ export default function DashboardScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           className="bg-purple-500 py-3 rounded-xl items-center mb-2"
-          onPress={() => sendTestNotification('mood')}
+          onPress={() => sendTestNotification('stress')}
         >
-          <Text className="text-white font-semibold">🔔 Send Mood Check Notification</Text>
+          <Text className="text-white font-semibold">🔔 Send Stress Check Notification</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          className="bg-green-500 py-3 rounded-xl items-center"
-          onPress={() => sendTestNotification('water')}
+          className="bg-pink-500 py-3 rounded-xl items-center"
+          onPress={() => sendTestNotification('sugar')}
         >
-          <Text className="text-white font-semibold">🔔 Send Hydration Notification</Text>
+          <Text className="text-white font-semibold">🔔 Send Sugar Intake Notification</Text>
         </TouchableOpacity>
       </View>
 

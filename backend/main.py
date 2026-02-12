@@ -24,13 +24,12 @@ app.include_router(users.router)
 app.include_router(check_ins.router)
 
 
-@app.get("/")
+@app.get("/health")
 async def root():
     """Root endpoint"""
     return {
-        "message": "Clarity API",
-        "version": "1.0.0",
-        "docs": "/docs"
+        "status": "healthy",
+        "database": "connected"
     }
 
 

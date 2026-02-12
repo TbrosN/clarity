@@ -22,6 +22,9 @@ export type DailyLog = {
   sugarIntake?: number; // 1 (None) - 5 (Lots)
   waterIntake?: number; // 1 (Little) - 5 (Hydrated)
   
+  // Hygiene & Habits
+  touchHygiene?: number; // 1 (Clean habits) - 5 (Picked at face/dirty pillow)
+  
   // Legacy fields
   sugar?: 'clean' | 'treat';
   cleansed?: boolean;

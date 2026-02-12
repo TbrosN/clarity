@@ -3,67 +3,74 @@ import { useEffect } from 'react';
 import { saveDailyLog } from '../services/StorageService';
 import QuickReport, { ReportOption } from '../components/QuickReport';
 
-// Define different check-in types
+// Define check-in types
 const CHECK_IN_TYPES = {
-  acne: {
-    title: "How's your skin? 🪞",
-    subtitle: "Quick check-in",
+  // 🌞 Morning Commute (Wake Up) - Trigger: First phone open
+  morningEnergy: {
+    title: "Good Morning! How is your energy level right now? 🌞",
+    subtitle: "Morning energy level",
     options: [
-      { value: 1, emoji: "✨", label: "Clear" },
-      { value: 2, emoji: "🌤️", label: "Good" },
-      { value: 3, emoji: "😐", label: "Few spots" },
-      { value: 4, emoji: "☁️", label: "Breaking out" },
-      { value: 5, emoji: "🚨", label: "Major breakout" },
-    ] as ReportOption[],
-    field: 'acneLevel' as const,
-  },
-  mood: {
-    title: "How are you feeling? 😊",
-    subtitle: "Check in with yourself",
-    options: [
-      { value: 1, emoji: "😔", label: "Low" },
-      { value: 2, emoji: "😕", label: "Meh" },
-      { value: 3, emoji: "😐", label: "Okay" },
+      { value: 1, emoji: "🧟", label: "Zombie" },
+      { value: 2, emoji: "😴", label: "Low" },
+      { value: 3, emoji: "😐", label: "Half tank" },
       { value: 4, emoji: "😊", label: "Good" },
-      { value: 5, emoji: "🤩", label: "Great" },
+      { value: 5, emoji: "⚡", label: "Fully Energized" },
     ] as ReportOption[],
-    field: 'mood' as const,
+    field: 'morningEnergy' as const,
   },
-  energy: {
-    title: "What's your energy? ⚡",
-    subtitle: "How are you feeling right now?",
+  morningSunlight: {
+    title: "Have you seen sunlight yet? ☀️",
+    subtitle: "Sunlight exposure",
     options: [
-      { value: 1, emoji: "🪫", label: "Drained" },
-      { value: 2, emoji: "😴", label: "Tired" },
-      { value: 3, emoji: "😐", label: "Okay" },
-      { value: 4, emoji: "🙂", label: "Good" },
-      { value: 5, emoji: "⚡", label: "Energized" },
+      { value: 1, emoji: "✨", label: "Yes" },
+      { value: 2, emoji: "⏳", label: "No, check again in 15 mins" },
     ] as ReportOption[],
-    field: 'energyLevel' as const,
+    field: 'morningSunlight' as const,
   },
-  stress: {
-    title: "Stress check 🧘‍♀️",
-    subtitle: "How stressed do you feel?",
+  // 🚧 Mid-Day Hazard Check (1:00 PM - 3:00 PM)
+  afternoonEnergy: {
+    title: "How is your energy level right now? 🚧",
+    subtitle: "The afternoon slump",
     options: [
-      { value: 1, emoji: "🧘‍♀️", label: "Zen" },
-      { value: 2, emoji: "😌", label: "Calm" },
-      { value: 3, emoji: "😐", label: "Okay" },
-      { value: 4, emoji: "😰", label: "Stressed" },
-      { value: 5, emoji: "🤯", label: "Frazzled" },
+      { value: 1, emoji: "😴", label: "I need a nap" },
+      { value: 2, emoji: "🥱", label: "Dragging" },
+      { value: 3, emoji: "😐", label: "Half tank" },
+      { value: 4, emoji: "😊", label: "Still good" },
+      { value: 5, emoji: "⚡", label: "Fully Energized" },
     ] as ReportOption[],
-    field: 'stress' as const,
+    field: 'afternoonEnergy' as const,
   },
-  sleep: {
-    title: "How did you sleep? 💤",
-    subtitle: "Sleep quality check",
+  caffeineCurfew: {
+    title: "Any caffeine this afternoon? ☕",
+    subtitle: "The Caffeine Curfew - Sleep latency impact",
     options: [
-      { value: 1, emoji: "😫", label: "Awful" },
-      { value: 2, emoji: "😴", label: "Poor" },
-      { value: 3, emoji: "😐", label: "Okay" },
-      { value: 4, emoji: "😊", label: "Good" },
-      { value: 5, emoji: "✨", label: "Amazing" },
+      { value: 1, emoji: "✅", label: "No afternoon caffeine" },
+      { value: 2, emoji: "☕", label: "Had afternoon caffeine" },
     ] as ReportOption[],
-    field: 'sleepQuality' as const,
+    field: 'caffeineCurfew' as const,
+  },
+  // 🌙 Evening Wind-Down (1 hour before target sleep)
+  screenWindDown: {
+    title: "When did screens go off? 🌙",
+    subtitle: "The Blue Light Hazard - Evening routine",
+    options: [
+      { value: 1, emoji: "✨", label: "Just now" },
+      { value: 2, emoji: "⏰", label: "1 hour ago" },
+      { value: 3, emoji: "📱", label: "Still on" },
+    ] as ReportOption[],
+    field: 'screenWindDown' as const,
+  },
+  bedtimeDigestion: {
+    title: "Are you hungry or full? 🍽️",
+    subtitle: "Hunger levels",
+    options: [
+      { value: 1, emoji: "🍜", label: "Starving" },
+      { value: 2, emoji: "🍽️", label: "A bit hungry" },
+      { value: 3, emoji: "😐", label: "Neutral" },
+      { value: 4, emoji: "🍽️", label: "A bit full" },
+      { value: 5, emoji: "🍔", label: "Very full" },
+    ] as ReportOption[],
+    field: 'bedtimeDigestion' as const,
   },
 };
 
@@ -76,9 +83,9 @@ export default function CheckInScreen() {
 
   const handleSubmit = async (value: number) => {
     const today = new Date().toISOString().split('T')[0];
-    await saveDailyLog({ 
-      date: today, 
-      [config.field]: value 
+    await saveDailyLog({
+      date: today,
+      [config.field]: value
     });
   };
 
