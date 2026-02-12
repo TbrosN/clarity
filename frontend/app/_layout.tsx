@@ -17,6 +17,11 @@ import {
   requestPermissions,
   scheduleDailyPrompts,
 } from "../services/NotificationService";
+import { ClerkProvider, useAuth, SignedIn, SignedOut } from "@clerk/clerk-expo";
+import { apiService } from "../services/ApiService";
+import { AuthScreen } from "@/components/ClerkAuth";
+
+const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || "";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -82,18 +87,37 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+      <RootLayoutNav />
+    </ClerkProvider>
+  );
 }
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const { getToken, isSignedIn } = useAuth();
+
+  // Set auth token when it changes
+  useEffect(() => {
+    const updateToken = async () => {
+      const token = await getToken();
+      apiService.setAuthToken(token);
+    };
+    updateToken();
+  }, [getToken]);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-      </Stack>
+      <SignedIn>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+        </Stack>
+      </SignedIn>
+      <SignedOut>
+        <AuthScreen />
+      </SignedOut>
     </ThemeProvider>
   );
 }

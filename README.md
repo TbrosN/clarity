@@ -1,4 +1,4 @@
-A New Way to Understand Your Skin
+# A New Way to Understand Your Skin
 
 Most acne advice is generic.
 Avoid dairy. Sleep more. Drink water. Reduce stress.

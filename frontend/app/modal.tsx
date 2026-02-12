@@ -1,13 +1,47 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, View, TouchableOpacity } from 'react-native';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 
 export default function ModalScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
+  const { user } = useUser();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace('/');
+  };
 
   return (
     <ScrollView className="flex-1 bg-white">
       <View className="flex-1 p-8 pt-16">
+        {/* User Profile Section */}
+        <View className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-3xl mb-8 border border-gray-100">
+          <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-1">
+              <Text className="text-2xl font-bold text-[#2C3E50] mb-1">
+                {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Account'}
+              </Text>
+              <Text className="text-gray-600 text-sm">
+                {user?.primaryEmailAddress?.emailAddress}
+              </Text>
+            </View>
+            <View className="bg-blue-100 w-16 h-16 rounded-full items-center justify-center">
+              <Text className="text-3xl">
+                {user?.firstName ? user.firstName.charAt(0).toUpperCase() : '👤'}
+              </Text>
+            </View>
+          </View>
+          
+          <TouchableOpacity
+            className="bg-red-500 py-3 rounded-xl items-center mt-2"
+            onPress={handleSignOut}
+          >
+            <Text className="text-white font-semibold text-base">Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+
         <Text className="text-4xl font-bold text-[#2C3E50] mb-4">
           How Clarity Works 💡
         </Text>
