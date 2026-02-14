@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiService } from './ApiService';
 
 export type DailyLog = {
   date: string; // YYYY-MM-DD
@@ -24,33 +24,53 @@ export type DailyLog = {
   
   // Hygiene & Habits
   touchHygiene?: number; // 1 (Clean habits) - 5 (Picked at face/dirty pillow)
+
+  // Energy tracking (current)
+  morningEnergy?: number;
+  morningSunlight?: number;
+  afternoonEnergy?: number;
+  caffeineCurfew?: number;
+  screenWindDown?: number;
+  bedtimeDigestion?: number;
   
   // Legacy fields
   sugar?: 'clean' | 'treat';
   cleansed?: boolean;
   skinRating?: number; // Deprecated, use skinFeeling
+  [key: string]: string | number | boolean | undefined;
 };
 
-const STORAGE_KEY_PREFIX = '@clarity_log_';
 
 export const saveDailyLog = async (log: DailyLog) => {
   try {
-    const key = `${STORAGE_KEY_PREFIX}${log.date}`;
-    // Merge with existing
-    const existing = await getDailyLog(log.date);
-    const merged = { ...existing, ...log };
-    await AsyncStorage.setItem(key, JSON.stringify(merged));
-    return merged;
+    await apiService.post('/logs/upsert', log);
+    return log;
   } catch (e) {
     console.error('Failed to save log', e);
   }
 };
+type BackendResponseEntry = {
+  id: number;
+  value: string | number | boolean;
+};
+
+type BackendLog = {
+  date: string;
+  responses: Record<string, BackendResponseEntry>;
+};
+
+const mapBackendLogToDailyLog = (log: BackendLog): DailyLog => {
+  const mapped: DailyLog = { date: log.date };
+  Object.entries(log.responses).forEach(([key, entry]) => {
+    mapped[key] = entry.value;
+  });
+  return mapped;
+};
 
 export const getDailyLog = async (date: string): Promise<DailyLog | null> => {
   try {
-    const key = `${STORAGE_KEY_PREFIX}${date}`;
-    const json = await AsyncStorage.getItem(key);
-    return json != null ? JSON.parse(json) : null;
+    const response = await apiService.get<{ log: BackendLog | null }>(`/logs/${date}`);
+    return response.log ? mapBackendLogToDailyLog(response.log) : null;
   } catch (e) {
     console.error('Failed to fetch log', e);
     return null;
@@ -58,18 +78,9 @@ export const getDailyLog = async (date: string): Promise<DailyLog | null> => {
 };
 
 export const getRecentLogs = async (days: number = 14): Promise<DailyLog[]> => {
-  // This is inefficient but fine for MVP with minimal data
   try {
-    const keys = await AsyncStorage.getAllKeys();
-    const logKeys = keys.filter(k => k.startsWith(STORAGE_KEY_PREFIX));
-    const stores = await AsyncStorage.multiGet(logKeys);
-
-    const logs = stores.map(([key, value]) => {
-      return value ? JSON.parse(value) : null;
-    }).filter(log => log !== null) as DailyLog[];
-
-    // Sort by date descending
-    return logs.sort((a, b) => b.date.localeCompare(a.date)).slice(0, days);
+    const response = await apiService.get<{ logs: BackendLog[] }>(`/logs/history?days=${days}`);
+    return response.logs.map(mapBackendLogToDailyLog);
   } catch (e) {
     console.error('Failed to get recent logs', e);
     return [];

@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
-from routers import users, health, check_ins
+from routers import health, logs
 
 app = FastAPI(
     title="Clarity API",
-    description="Backend API for Clarity skincare and health tracking app",
+    description="Backend API for Clarity energy and behavior tracking app",
     version="1.0.0"
 )
 
@@ -20,17 +20,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router)
-app.include_router(users.router)
-app.include_router(check_ins.router)
-
-
-@app.get("/health")
-async def root():
-    """Root endpoint"""
-    return {
-        "status": "healthy",
-        "database": "connected"
-    }
+app.include_router(logs.router)
 
 
 if __name__ == "__main__":

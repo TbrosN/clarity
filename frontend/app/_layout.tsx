@@ -101,11 +101,30 @@ function RootLayoutNav() {
   // Set auth token when it changes
   useEffect(() => {
     const updateToken = async () => {
-      const token = await getToken();
+      if (!isSignedIn) {
+        apiService.setAuthToken(null);
+        return;
+      }
+
+      let token: string | null = null;
+      try {
+        token = await getToken({ template: "supabase" });
+      } catch {
+        token = null;
+      }
+
+      if (!token) {
+        try {
+          token = await getToken();
+        } catch {
+          token = null;
+        }
+      }
+
       apiService.setAuthToken(token);
     };
     updateToken();
-  }, [getToken]);
+  }, [getToken, isSignedIn]);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>

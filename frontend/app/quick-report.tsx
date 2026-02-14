@@ -49,7 +49,11 @@ const REPORT_TYPES = {
 export default function QuickReportScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const reportType = (params.type as keyof typeof REPORT_TYPES) || 'water';
+  const rawType = params.type as string | undefined;
+  const reportType: keyof typeof REPORT_TYPES =
+    rawType && rawType in REPORT_TYPES
+      ? (rawType as keyof typeof REPORT_TYPES)
+      : 'water';
   const config = REPORT_TYPES[reportType];
   const autoSubmit = params.autoSubmit ? parseInt(params.autoSubmit as string) : null;
 

@@ -31,7 +31,15 @@ export function useCurrentUser() {
       try {
         setLoading(true);
         // Ensure token is set
-        const token = await getToken();
+        let token: string | null = null;
+        try {
+          token = await getToken({ template: 'supabase' });
+        } catch {
+          token = null;
+        }
+        if (!token) {
+          token = await getToken();
+        }
         apiService.setAuthToken(token);
         
         // Fetch user from backend

@@ -5,6 +5,78 @@ import QuickReport, { ReportOption } from '../components/QuickReport';
 
 // Define check-in types
 const CHECK_IN_TYPES = {
+  acne: {
+    title: "How is your skin right now? 🪞",
+    subtitle: "Current breakout level",
+    options: [
+      { value: 1, emoji: "✨", label: "Clear" },
+      { value: 2, emoji: "🙂", label: "Minor" },
+      { value: 3, emoji: "😐", label: "Noticeable" },
+      { value: 4, emoji: "😬", label: "Flaring" },
+      { value: 5, emoji: "🚨", label: "Breakout" },
+    ] as ReportOption[],
+    field: 'acneLevel' as const,
+  },
+  stress: {
+    title: "How stressed are you feeling? 🧘‍♀️",
+    subtitle: "Current stress level",
+    options: [
+      { value: 1, emoji: "😌", label: "Zen" },
+      { value: 2, emoji: "🙂", label: "Calm" },
+      { value: 3, emoji: "😐", label: "Okay" },
+      { value: 4, emoji: "😓", label: "Tense" },
+      { value: 5, emoji: "🤯", label: "Frazzled" },
+    ] as ReportOption[],
+    field: 'stress' as const,
+  },
+  sleep: {
+    title: "How was your sleep last night? 💤",
+    subtitle: "Sleep quality",
+    options: [
+      { value: 1, emoji: "🥱", label: "Very poor" },
+      { value: 2, emoji: "😴", label: "Poor" },
+      { value: 3, emoji: "😐", label: "Okay" },
+      { value: 4, emoji: "🙂", label: "Good" },
+      { value: 5, emoji: "✨", label: "Great" },
+    ] as ReportOption[],
+    field: 'sleepQuality' as const,
+  },
+  touch: {
+    title: "How were your hands-off habits today? 🖐️",
+    subtitle: "Face touching / hygiene",
+    options: [
+      { value: 1, emoji: "🧼", label: "Excellent" },
+      { value: 2, emoji: "👌", label: "Good" },
+      { value: 3, emoji: "😐", label: "Mixed" },
+      { value: 4, emoji: "😬", label: "Not great" },
+      { value: 5, emoji: "🙈", label: "Constant touching" },
+    ] as ReportOption[],
+    field: 'touchHygiene' as const,
+  },
+  mood: {
+    title: "How's your mood right now? 😊",
+    subtitle: "Current mood",
+    options: [
+      { value: 1, emoji: "😞", label: "Low" },
+      { value: 2, emoji: "🙁", label: "Down" },
+      { value: 3, emoji: "😐", label: "Neutral" },
+      { value: 4, emoji: "🙂", label: "Good" },
+      { value: 5, emoji: "😄", label: "Great" },
+    ] as ReportOption[],
+    field: 'mood' as const,
+  },
+  energy: {
+    title: "How is your energy right now? ⚡",
+    subtitle: "Current energy level",
+    options: [
+      { value: 1, emoji: "🧟", label: "Exhausted" },
+      { value: 2, emoji: "😴", label: "Low" },
+      { value: 3, emoji: "😐", label: "Half tank" },
+      { value: 4, emoji: "😊", label: "Good" },
+      { value: 5, emoji: "⚡", label: "Fully energized" },
+    ] as ReportOption[],
+    field: 'energyLevel' as const,
+  },
   // 🌞 Morning Commute (Wake Up) - Trigger: First phone open
   morningEnergy: {
     title: "Good Morning! How is your energy level right now? 🌞",
@@ -77,7 +149,11 @@ const CHECK_IN_TYPES = {
 export default function CheckInScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const checkInType = (params.type as keyof typeof CHECK_IN_TYPES) || 'acne';
+  const rawType = params.type as string | undefined;
+  const checkInType: keyof typeof CHECK_IN_TYPES =
+    rawType && rawType in CHECK_IN_TYPES
+      ? (rawType as keyof typeof CHECK_IN_TYPES)
+      : 'morningEnergy';
   const config = CHECK_IN_TYPES[checkInType];
   const autoSubmit = params.autoSubmit ? parseInt(params.autoSubmit as string) : null;
 
