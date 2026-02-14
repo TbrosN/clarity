@@ -1,29 +1,17 @@
-# A New Way to Understand Your Energy
+# Clarity
 
-Most energy advice is generic.
-Drink coffee. Grab an energy drink. Use nicotine. Push through fatigue.
+**Track your energy. Discover your patterns.**
 
-But your energy isn’t generic.
+[Try Clarity](https://clarity-sable-ten.vercel.app/)
 
-This app is built on a simple belief:
-If you want sustainable energy, you have to address root causes.
+## What it does
 
-Instead of chasing quick fixes, we help you understand what actually drives your energy levels by using your own data.
+Clarity helps you understand what drives your energy levels by tracking your daily habits:
 
-We connect the dots between your daily behaviors and how you feel:
+- Sleep patterns
+- Diet choices  
+- Daily routines
 
-How your sleep schedule affects daytime energy
+Log your habits. See the patterns. Make better decisions.
 
-How diet patterns influence crashes and focus
-
-How routines and habits shape consistency over time
-
-Not guesses. Not trends.
-Just patterns drawn from your lived experience.
-
-You log. We analyze. You learn. You adjust.
-
-Small insights. Better decisions. More consistent energy.
-
-Because the goal isn’t stimulants.
-It’s awareness, clarity, and control over your energy.
+No guesswork—just insights from your own data.
