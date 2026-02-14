@@ -1,33 +1,29 @@
-# A New Way to Understand Your Skin
+# A New Way to Understand Your Energy
 
-Most acne advice is generic.
-Avoid dairy. Sleep more. Drink water. Reduce stress.
+Most energy advice is generic.
+Drink coffee. Grab an energy drink. Use nicotine. Push through fatigue.
 
-But your skin isn’t generic.
+But your energy isn’t generic.
 
 This app is built on a simple belief:
-Health is personal, and advice should be too.
+If you want sustainable energy, you have to address root causes.
 
-Instead of telling you what usually causes breakouts, we help you discover what affects your skin — using your own data as evidence.
+Instead of chasing quick fixes, we help you understand what actually drives your energy levels by using your own data.
 
-We connect the dots between your daily life and your breakouts:
+We connect the dots between your daily behaviors and how you feel:
 
-How your sleep patterns show up on your skin
+How your sleep schedule affects daytime energy
 
-How certain foods correlate with flare-ups
+How diet patterns influence crashes and focus
 
-How stress, hydration, and habits interact over time
+How routines and habits shape consistency over time
 
-Not guesses. Not trends. Not influencer advice.
+Not guesses. Not trends.
 Just patterns drawn from your lived experience.
 
-Think of it as navigation for your health.
 You log. We analyze. You learn. You adjust.
 
-Small insights. Better decisions. Fewer surprises.
+Small insights. Better decisions. More consistent energy.
 
-Because the goal isn’t perfection.
-It’s awareness, clarity, and control.
-
-Your skin is a system.
-Let’s understand it — together.
+Because the goal isn’t stimulants.
+It’s awareness, clarity, and control over your energy.
