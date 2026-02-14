@@ -294,7 +294,7 @@ export default function DashboardScreen() {
       )}
 
       {/* Debug Section */}
-      <View className="bg-gray-100 p-4 rounded-2xl mb-6 border border-gray-200">
+      {/* <View className="bg-gray-100 p-4 rounded-2xl mb-6 border border-gray-200">
         <Text className="text-gray-600 font-bold text-sm mb-3 uppercase tracking-wider">Debug Tools</Text>
 
         <View className="bg-blue-50 p-3 rounded-xl mb-3 border border-blue-200">
@@ -328,7 +328,7 @@ export default function DashboardScreen() {
         >
           <Text className="text-white font-semibold">🔔 Send Sugar Intake Notification</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       {/* History Link (Placeholder for Tab 2) */}
       <Link href="/(tabs)/two" asChild>
