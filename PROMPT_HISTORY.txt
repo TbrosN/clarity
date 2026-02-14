@@ -302,3 +302,7 @@ for this plan, let's focus only on frontend, and we will handle backend changes 
 @Optifare/expo-app/public/index.html @Optifare/expo-app/public/manifest.json similar to this, let's make clarity/ into a standalone pwa@clarity/app.json
 
 @app/(tabs)/index.tsx @app/check-in.tsx @app/wind-down.tsx Let's revamp the UX a bit. Taking inspiration from Waze (see scerenshots), we should give the user the option to report things like their mood, their acne level (from clear to a couple pimples to total breakout), their energy levels, sleep/wakeup time. And we should also have these kinds of really simple check-in questions, which we will ask throughout the day via notifications, that when clicked take you to our app. Like Waze, these should be super simple to answer (in our case, likert style questions would make sense), yet it should let us make connections between things the user cares about (acne breakouts) and their behaviors (how late they ate their last meal, sleep schedule, etc)
+
+Let's update our backend to actually populate these tables when the user answers a question. Note we are currently using asyncstorage to store user questions and answers; we can remove that in favor of using the db. Then in the history view, the user should be able to view/edit past answers and see some insights
+
+I dont know if we need to manually verify jwts since we're using supabase with clerk, please see https://clerk.com/blog/how-clerk-integrates-with-supabase-auth. In particular, we should be using supabase auth funcs whenever possible rather than reinventing the wheel
