@@ -88,6 +88,13 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { getToken, isSignedIn, isLoaded } = useAuth();
 
+  // Warm backend as soon as app loads to reduce first real-request latency.
+  useEffect(() => {
+    apiService.healthCheck().catch((error) => {
+      console.warn("Backend warm-up ping failed:", error);
+    });
+  }, []);
+
   useEffect(() => {
     if (isLoaded) {
       SplashScreen.hideAsync();
