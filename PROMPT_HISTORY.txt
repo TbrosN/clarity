@@ -1,4 +1,4 @@
-I used a mix of Antigravity with Gemini Pro and Cursor with Claude.
+I used a wide mix of agentic coding tools: Cursor, Codex, Warp, and Antigravity. Across these, I used Claude, Gemini, and ChatGPT.
 
 Help me make an MVP for my expo react native mobile pwa. It asks the user simple questions throughout the day and makes connections to help them improve their health, particularly prevent and  mitigate acne breakouts. See the plan below for more details:
 ```
