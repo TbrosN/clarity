@@ -41,3 +41,43 @@ class Insight(BaseModel):
 class EnergyEfficiency(BaseModel):
     percentage: int
     color: str
+
+
+class BaselineMetric(BaseModel):
+    """Personal baseline for a specific metric"""
+    metric: str
+    baseline: float
+    current_value: float | None = None
+    deviation: float | None = None
+    deviation_percentage: float | None = None
+    unit: str
+    interpretation: str | None = None
+
+
+class BehaviorImpact(BaseModel):
+    """Shows how a specific behavior impacts outcomes for this user"""
+    behavior: str
+    behavior_label: str
+    outcome: str
+    outcome_label: str
+    when_good: float  # Average outcome when behavior is good
+    when_poor: float  # Average outcome when behavior is poor
+    your_impact: float  # Difference (when_good - when_poor)
+    sample_size_good: int
+    sample_size_poor: int
+    confidence: str
+    recommendation: str | None = None
+
+
+class PersonalBaselinesResponse(BaseModel):
+    """Complete personal baselines and deviations report"""
+    baselines: list[BaselineMetric]
+    behavior_impacts: list[BehaviorImpact]
+    tracking_days: int
+    last_updated: datetime
+
+
+class InsightsDebug(BaseModel):
+    """Debug information for insights generation"""
+    logs_count: int
+    message: str
