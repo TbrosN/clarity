@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { saveDailyLog } from '../services/StorageService';
 
 type SurveyQuestion = {
@@ -256,29 +256,42 @@ export default function SurveyScreen() {
             )}
           </View>
 
-          {/* Time Input */}
+          {/* Time Picker */}
           {currentQuestion.type === 'time' && (
             <View className="w-full max-w-md">
-              <TextInput
-                value={timeValue}
-                onChangeText={setTimeValue}
-                placeholder="HH:MM (e.g., 22:30)"
-                keyboardType="numbers-and-punctuation"
-                className="w-full px-6 py-4 text-xl text-center bg-gray-50 rounded-2xl border-2 border-gray-200 mb-6"
-                autoFocus
-                onSubmitEditing={handleTimeSubmit}
-              />
+              {React.createElement('input', {
+                type: 'time',
+                value: timeValue,
+                onChange: (e: any) => setTimeValue(e.target.value),
+                onKeyDown: (e: any) => {
+                  if (e.key === 'Enter' && timeValue) handleTimeSubmit();
+                },
+                autoFocus: true,
+                style: {
+                  width: '100%',
+                  padding: '16px 24px',
+                  fontSize: '28px',
+                  textAlign: 'center' as const,
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '16px',
+                  border: '2px solid #e5e7eb',
+                  marginBottom: '24px',
+                  outline: 'none',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  color: '#1f2937',
+                },
+              })}
               <Pressable
                 onPress={handleTimeSubmit}
-                disabled={!timeValue.trim()}
+                disabled={!timeValue}
                 className={`w-full py-4 rounded-2xl items-center ${
-                  timeValue.trim()
+                  timeValue
                     ? 'bg-[#FF6B4A]'
                     : 'bg-gray-200'
                 }`}
               >
                 <Text className={`font-semibold text-lg ${
-                  timeValue.trim() ? 'text-white' : 'text-gray-400'
+                  timeValue ? 'text-white' : 'text-gray-400'
                 }`}>
                   {currentStep === survey.questions.length - 1 ? 'Finish' : 'Continue'}
                 </Text>

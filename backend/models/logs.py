@@ -6,7 +6,7 @@ class DailyLogUpsert(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     date: date
-    wakeTime: datetime | None = None
+    wakeTime: str | None = None  # Time string (HH:mm)
     stress: int | None = Field(default=None, ge=1, le=5)
     sleepQuality: int | None = Field(default=None, ge=1, le=5)
     
@@ -36,3 +36,8 @@ class Insight(BaseModel):
     message: str
     confidence: str | None = None
     impact: str | None = None
+
+
+class EnergyEfficiency(BaseModel):
+    percentage: int
+    color: str
