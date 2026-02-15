@@ -8,35 +8,21 @@ export type DailyLog = {
   bedtime?: string; // ISO timestamp
   sleepQuality?: number; // 1-5 Likert scale
   
-  // Skin & Physical
-  acneLevel?: number; // 1 (Clear) - 5 (Total breakout)
-  skinFeeling?: number; // 1 (Bad) - 5 (Glowing)
+  // Mood & Stress
+  stress?: number; // 1 (Very calm) - 5 (Very stressed)
   
-  // Energy & Mood
-  energyLevel?: number; // 1 (Exhausted) - 5 (Energized)
-  mood?: number; // 1 (Low) - 5 (Great)
-  stress?: number; // 1 (Zen) - 5 (Frazzled)
+  // Before Bed Survey fields
+  plannedSleepTime?: string; // Time string (HH:mm)
+  lastMeal?: string; // "3+hours" | "2-3hours" | "1-2hours" | "<1hour" | "justAte"
+  screensOff?: string; // "2+hours" | "1-2hours" | "30-60min" | "<30min" | "stillUsing"
+  caffeine?: string; // "none" | "before12" | "12-2pm" | "2-6pm" | "after6pm"
   
-  // Diet & Habits
-  lastMealTime?: string; // ISO timestamp
-  sugarIntake?: number; // 1 (None) - 5 (Lots)
-  waterIntake?: number; // 1 (Little) - 5 (Hydrated)
+  // After Wake Survey fields
+  actualSleepTime?: string; // Time string (HH:mm)
+  snooze?: string; // "noAlarm" | "no" | "1-2times" | "3+times"
+  energy?: number; // 1 (None) - 5 (Very high)
+  sleepiness?: number; // 1 (Extremely sleepy) - 5 (Very alert)
   
-  // Hygiene & Habits
-  touchHygiene?: number; // 1 (Clean habits) - 5 (Picked at face/dirty pillow)
-
-  // Energy tracking (current)
-  morningEnergy?: number;
-  morningSunlight?: number;
-  afternoonEnergy?: number;
-  caffeineCurfew?: number;
-  screenWindDown?: number;
-  bedtimeDigestion?: number;
-  
-  // Legacy fields
-  sugar?: 'clean' | 'treat';
-  cleansed?: boolean;
-  skinRating?: number; // Deprecated, use skinFeeling
   [key: string]: string | number | boolean | undefined;
 };
 

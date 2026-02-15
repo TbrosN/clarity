@@ -69,12 +69,8 @@ export default function RootLayout() {
         const screen = data.screen;
         const type = data.type;
 
-        if (screen === "check-in") {
-          router.push(type ? `/check-in?type=${type}` : "/check-in");
-        } else if (screen === "quick-report") {
-          router.push(type ? `/quick-report?type=${type}` : "/quick-report");
-        } else if (screen === "wind-down") {
-          router.push("/wind-down");
+        if (screen === "survey") {
+          router.push(type ? `/survey?type=${type}` : "/survey");
         }
       });
 

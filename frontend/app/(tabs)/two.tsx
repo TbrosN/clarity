@@ -16,23 +16,23 @@ type HistoryLog = {
 };
 
 const LABELS: Record<string, string> = {
-  acneLevel: 'Skin breakout level',
-  skinFeeling: 'Skin feeling',
-  energyLevel: 'Energy',
-  mood: 'Mood',
-  stress: 'Stress',
-  sleepQuality: 'Sleep quality',
-  touchHygiene: 'Touch hygiene',
-  morningEnergy: 'Morning energy',
-  morningSunlight: 'Sunlight',
-  afternoonEnergy: 'Afternoon energy',
-  caffeineCurfew: 'Afternoon caffeine',
-  screenWindDown: 'Screens before bed',
-  bedtimeDigestion: 'Bedtime fullness',
-  waterIntake: 'Hydration',
-  sugarIntake: 'Sugar',
-  lastMealTime: 'Last meal time',
+  // Sleep tracking
+  wakeTime: 'Wake time',
   bedtime: 'Bedtime',
+  sleepQuality: 'Sleep quality',
+  
+  // Before Bed Survey
+  plannedSleepTime: 'Planned sleep time',
+  lastMeal: 'Last meal timing',
+  screensOff: 'Screens off timing',
+  caffeine: 'Caffeine timing',
+  stress: 'Stress level',
+  
+  // After Wake Survey
+  actualSleepTime: 'Actual sleep time',
+  snooze: 'Snooze behavior',
+  energy: 'Energy level',
+  sleepiness: 'Sleepiness level',
 };
 
 export default function HistoryScreen() {

@@ -6,23 +6,21 @@ class DailyLogUpsert(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     date: date
-    bedtime: datetime | None = None
-    lastMealTime: datetime | None = None
-    acneLevel: int | None = Field(default=None, ge=1, le=5)
-    skinFeeling: int | None = Field(default=None, ge=1, le=5)
-    energyLevel: int | None = Field(default=None, ge=1, le=5)
-    mood: int | None = Field(default=None, ge=1, le=5)
+    wakeTime: datetime | None = None
     stress: int | None = Field(default=None, ge=1, le=5)
     sleepQuality: int | None = Field(default=None, ge=1, le=5)
-    touchHygiene: int | None = Field(default=None, ge=1, le=5)
-    morningEnergy: int | None = Field(default=None, ge=1, le=5)
-    morningSunlight: int | None = Field(default=None, ge=1, le=2)
-    afternoonEnergy: int | None = Field(default=None, ge=1, le=5)
-    caffeineCurfew: int | None = Field(default=None, ge=1, le=2)
-    screenWindDown: int | None = Field(default=None, ge=1, le=3)
-    bedtimeDigestion: int | None = Field(default=None, ge=1, le=5)
-    waterIntake: int | None = Field(default=None, ge=1, le=5)
-    sugarIntake: int | None = Field(default=None, ge=1, le=5)
+    
+    # Before Bed Survey fields
+    plannedSleepTime: str | None = None  # Time string (HH:mm)
+    lastMeal: str | None = None  # "3+hours" | "2-3hours" | "1-2hours" | "<1hour" | "justAte"
+    screensOff: str | None = None  # "2+hours" | "1-2hours" | "30-60min" | "<30min" | "stillUsing"
+    caffeine: str | None = None  # "none" | "before12" | "12-2pm" | "2-6pm" | "after6pm"
+    
+    # After Wake Survey fields
+    actualSleepTime: str | None = None  # Time string (HH:mm)
+    snooze: str | None = None  # "noAlarm" | "no" | "1-2times" | "3+times"
+    energy: int | None = Field(default=None, ge=1, le=5)  # 1 (None) - 5 (Very high)
+    sleepiness: int | None = Field(default=None, ge=1, le=5)  # 1 (Extremely sleepy) - 5 (Very alert)
 
 
 class ResponseValueUpdate(BaseModel):

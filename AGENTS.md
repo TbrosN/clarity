@@ -4,7 +4,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-Clarity is a skin health and acne tracking PWA that helps users discover patterns between their daily life (sleep, food, stress, hydration) and breakouts using personal data.
+Clarity is a sleep and energy tracking PWA that helps users discover patterns between their daily habits (sleep timing, screen time, caffeine, stress) and energy levels using personal data.
 
 ## Tech Stack
 
@@ -17,10 +17,6 @@ Clarity is a skin health and acne tracking PWA that helps users discover pattern
 
 ```bash
 npm run web           # Start web development server
-npm run ios           # Start iOS simulator
-npm run android       # Start Android emulator
-npm start             # Start Expo dev server (pick platform)
-npm run build:web     # Build web production bundle
 ```
 
 ### Backend (from `backend/` directory)
@@ -29,10 +25,7 @@ npm run build:web     # Build web production bundle
 # Using uv (preferred)
 uv sync                                    # Install dependencies
 source .venv/bin/activate                  # Activate virtualenv
-python main.py                             # Run dev server with hot reload
-
-# Alternative
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uv run main.py                             # Run dev server with hot reload
 
 # Dependency management
 uv add <package>           # Add runtime dependency
