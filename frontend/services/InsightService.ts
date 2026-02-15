@@ -7,16 +7,48 @@ export type Insight = {
   impact?: 'positive' | 'negative';
 };
 
+const isInsight = (value: unknown): value is Insight => {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<Insight>;
+  return (
+    typeof candidate.type === 'string' &&
+    typeof candidate.message === 'string'
+  );
+};
+
+const normalizeInsights = (payload: unknown): Insight[] => {
+  if (Array.isArray(payload)) {
+    return payload.filter(isInsight);
+  }
+
+  if (payload && typeof payload === 'object') {
+    const obj = payload as Record<string, unknown>;
+    if (Array.isArray(obj.insights)) {
+      return obj.insights.filter(isInsight);
+    }
+    if (Array.isArray(obj.data)) {
+      return obj.data.filter(isInsight);
+    }
+  }
+
+  return [];
+};
+
 export const generateInsights = async (): Promise<Insight[]> => {
   try {
-    return await apiService.get<Insight[]>('/insights');
+    const payload = await apiService.get<unknown>('/insights');
+    const normalized = normalizeInsights(payload);
+    if (normalized.length > 0) {
+      return normalized;
+    }
   } catch (error) {
     console.error('Failed to fetch insights from API:', error);
-    return [{
-      type: 'tip',
-      message: 'Keep tracking for a few more days to unlock personalized insights.',
-    }];
   }
+
+  return [{
+    type: 'tip',
+    message: 'Keep tracking for a few more days to unlock personalized insights.',
+  }];
 };
 
 export const calculateEnergyLevel = async (): Promise<{ percentage: number, color: string }> => {

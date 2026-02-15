@@ -1,22 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useSignIn, useSignUp, useOAuth } from '@clerk/clerk-expo';
-import * as WebBrowser from 'expo-web-browser';
-
-// This is required for OAuth to work properly
-WebBrowser.maybeCompleteAuthSession();
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { useSignIn, useSignUp } from '@clerk/clerk-expo';
 
 /**
- * Simplified authentication using Clerk hooks with Tailwind styling
- * Supports OAuth (Google, GitHub, Apple) and email/password
+ * Simplified authentication using Clerk hooks with Tailwind styling.
+ * Uses redirect-based OAuth for better iOS Safari/PWA compatibility.
  */
 export function AuthScreen() {
   const { signIn, setActive: setActiveSignIn, isLoaded: signInLoaded } = useSignIn();
   const { signUp, setActive: setActiveSignUp, isLoaded: signUpLoaded } = useSignUp();
-  const { startOAuthFlow: startGoogleOAuth } = useOAuth({ strategy: 'oauth_google' });
-  const { startOAuthFlow: startGitHubOAuth } = useOAuth({ strategy: 'oauth_github' });
-  const { startOAuthFlow: startAppleOAuth } = useOAuth({ strategy: 'oauth_apple' });
-  
+
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,18 +18,27 @@ export function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const onOAuthPress = async (startOAuthFlow: any, provider: string) => {
+  const buildRedirectUrl = (path: string) => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      return new URL(path, window.location.origin).toString();
+    }
+    return path;
+  };
+
+  const onOAuthPress = async (strategy: 'oauth_google' | 'oauth_github' | 'oauth_apple', provider: string) => {
+    if (!signInLoaded || !signIn) return;
+
     try {
       setLoading(true);
       setError('');
-      const { createdSessionId, setActive } = await startOAuthFlow();
-      if (createdSessionId && setActive) {
-        await setActive({ session: createdSessionId });
-      }
+      await signIn.authenticateWithRedirect({
+        strategy,
+        redirectUrl: buildRedirectUrl('/sso-callback'),
+        redirectUrlComplete: buildRedirectUrl('/'),
+      });
     } catch (err: any) {
-      console.error(`OAuth error (${provider}):`, err);
+      console.error(`OAuth redirect error (${provider}):`, err);
       setError(`Failed to sign in with ${provider}`);
-    } finally {
       setLoading(false);
     }
   };
@@ -101,9 +103,9 @@ export function AuthScreen() {
           keyboardType="number-pad"
         />
         {error ? <Text className="text-red-500 text-sm mb-3 text-center">{error}</Text> : null}
-        <TouchableOpacity 
-          className="w-full max-w-[400px] h-[52px] bg-blue-500 rounded-xl justify-center items-center mt-2" 
-          onPress={onVerifyPress} 
+        <TouchableOpacity
+          className="w-full max-w-[400px] h-[52px] bg-blue-500 rounded-xl justify-center items-center mt-2"
+          onPress={onVerifyPress}
           disabled={loading}
         >
           {loading ? <ActivityIndicator color="#fff" /> : <Text className="text-white text-base font-semibold">Verify</Text>}
@@ -125,7 +127,7 @@ export function AuthScreen() {
       {/* OAuth Buttons */}
       <TouchableOpacity
         className="w-full max-w-[400px] h-[52px] bg-white rounded-xl border border-gray-200 flex-row justify-center items-center mb-3"
-        onPress={() => onOAuthPress(startGoogleOAuth, 'Google')}
+        onPress={() => onOAuthPress('oauth_google', 'Google')}
         disabled={loading}
       >
         <Text className="text-xl mr-3">🔍</Text>
@@ -134,7 +136,7 @@ export function AuthScreen() {
 
       <TouchableOpacity
         className="w-full max-w-[400px] h-[52px] bg-white rounded-xl border border-gray-200 flex-row justify-center items-center mb-3"
-        onPress={() => onOAuthPress(startGitHubOAuth, 'GitHub')}
+        onPress={() => onOAuthPress('oauth_github', 'GitHub')}
         disabled={loading}
       >
         <Text className="text-xl mr-3">🐙</Text>
@@ -143,7 +145,7 @@ export function AuthScreen() {
 
       <TouchableOpacity
         className="w-full max-w-[400px] h-[52px] bg-white rounded-xl border border-gray-200 flex-row justify-center items-center mb-3"
-        onPress={() => onOAuthPress(startAppleOAuth, 'Apple')}
+        onPress={() => onOAuthPress('oauth_apple', 'Apple')}
         disabled={loading}
       >
         <Text className="text-xl mr-3">🍎</Text>

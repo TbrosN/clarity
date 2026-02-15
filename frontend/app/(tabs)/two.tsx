@@ -1,5 +1,5 @@
 import { apiService } from '@/services/ApiService';
-import { Insight } from '@/services/InsightService';
+import { generateInsights, Insight } from '@/services/InsightService';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
@@ -45,11 +45,11 @@ export default function HistoryScreen() {
 
   const loadData = async () => {
     const [historyData, insightsData] = await Promise.all([
-      apiService.get<{ logs: HistoryLog[] }>('/logs/history?days=30'),
-      apiService.get<Insight[]>('/insights'),
+      apiService.get<{ logs?: HistoryLog[] }>('/logs/history?days=30'),
+      generateInsights(),
     ]);
-    setLogs(historyData.logs);
-    setInsights(insightsData);
+    setLogs(Array.isArray(historyData?.logs) ? historyData.logs : []);
+    setInsights(Array.isArray(insightsData) ? insightsData : []);
   };
 
   useFocusEffect(

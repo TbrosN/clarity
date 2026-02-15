@@ -47,7 +47,7 @@ export default function DashboardScreen() {
 
     // Insights
     const generated = await generateInsights();
-    setInsights(generated);
+    setInsights(Array.isArray(generated) ? generated : []);
   };
 
   useFocusEffect(
