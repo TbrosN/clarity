@@ -17,9 +17,10 @@ import {
   requestPermissions,
   scheduleDailyPrompts,
 } from "../services/NotificationService";
-import { ClerkProvider, useAuth, SignedIn, SignedOut } from "@clerk/clerk-expo";
+import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
+import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { apiService } from "../services/ApiService";
-import { AuthScreen } from "@/components/ClerkAuth";
+import { getApiAuthToken } from "../services/AuthTokenService";
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || "";
 
@@ -46,13 +47,6 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  // Notification Setup
   useEffect(() => {
     async function setupNotifications() {
       const granted = await requestPermissions();
@@ -84,7 +78,7 @@ export default function RootLayout() {
   }
 
   return (
-    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
       <RootLayoutNav />
     </ClerkProvider>
   );
@@ -92,47 +86,46 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn, isLoaded } = useAuth();
+
+  useEffect(() => {
+    if (isLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [isLoaded]);
 
   // Set auth token when it changes
   useEffect(() => {
     const updateToken = async () => {
-      if (!isSignedIn) {
+      if (!isLoaded || !isSignedIn) {
         apiService.setAuthToken(null);
         return;
       }
 
-      let token: string | null = null;
-      try {
-        token = await getToken({ template: "supabase" });
-      } catch {
-        token = null;
-      }
-
-      if (!token) {
-        try {
-          token = await getToken();
-        } catch {
-          token = null;
-        }
-      }
-
+      const token = await getApiAuthToken(getToken);
       apiService.setAuthToken(token);
     };
+
     updateToken();
-  }, [getToken, isSignedIn]);
+  }, [getToken, isLoaded, isSignedIn]);
+
+  if (!isLoaded) {
+    return null;
+  }
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <SignedIn>
-        <Stack>
+      <Stack>
+        <Stack.Protected guard={isSignedIn}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-        </Stack>
-      </SignedIn>
-      <SignedOut>
-        <AuthScreen />
-      </SignedOut>
+          <Stack.Screen name="survey" options={{ headerShown: false }} />
+        </Stack.Protected>
+
+        <Stack.Protected guard={!isSignedIn}>
+          <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+        </Stack.Protected>
+      </Stack>
     </ThemeProvider>
   );
 }

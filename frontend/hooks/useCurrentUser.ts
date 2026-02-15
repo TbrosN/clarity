@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-expo';
 import { apiService } from '../services/ApiService';
+import { getApiAuthToken } from '../services/AuthTokenService';
 
 interface User {
   id: number;
@@ -31,17 +32,9 @@ export function useCurrentUser() {
       try {
         setLoading(true);
         // Ensure token is set
-        let token: string | null = null;
-        try {
-          token = await getToken({ template: 'supabase' });
-        } catch {
-          token = null;
-        }
-        if (!token) {
-          token = await getToken();
-        }
+        const token = await getApiAuthToken(getToken);
         apiService.setAuthToken(token);
-        
+
         // Fetch user from backend
         const userData = await apiService.getCurrentUser();
         setUser(userData as User);
