@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +18,15 @@ class Settings(BaseSettings):
     api_host: str
     port: int
     cors_origins: str
+
+    # LLM insights (optional)
+    llm_insights_enabled: bool = False
+    llm_api_key: str | None = None
+    llm_model: str = "gpt-4o-mini"
+    llm_base_url: str = "https://api.openai.com/v1"
+    llm_timeout_seconds: float = 15.0
+    llm_insights_max_items: int = 4
+    insights_window_days: int = Field(default=14, ge=7, le=14)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
