@@ -11,3 +11,6 @@ for the fact-grounding/validation, perhaps we can implement a citation system, w
 hmm, when I run this it looks like we are just going to the deterministic fallback of `Keep completing your daily surveys to unlock personalized insights. Current completion in the last 14 days is 50%`. Let's first of all be less strict about how many days the user needs before they have insights. A user that has answered the past 7 days should definitenly be seeing some insights.
 
 @backend/routers/logs.py:728-739 let's avoid any deterministic insights like this; we should deterministically calculate a bunch of raw numbers and statistics, but our LLM Service will do all insight generation in our separate pipeline
+
+@backend/services/insight_llm.py:96 our llm outputs citations for their claims. Let's make our frontend display these nicely so a user can easily see what was cited in a tooltip. For instance, here's a tip in our currnet UI:
+`Sleep quality and morning energy shows a better pattern over the last 7 days: Sleep quality and morning energy: 4.50 vs 1.00 (+3.50) over 7 days [[cite:fact_sleep_quality_energy_7d_delta]] (4.5 vs 1.0) [[cite:fact_sleep_quality_energy_7d_mean_good]] [[cite:fact_sleep_quality_energy_7d_mean_poor]].`

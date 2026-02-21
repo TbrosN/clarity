@@ -1,4 +1,5 @@
 import { generateInsights, Insight } from '@/services/InsightService';
+import InsightMessageWithCitations from '@/components/InsightMessageWithCitations';
 import { fetchPersonalBaselines, PersonalBaselinesResponse, getMetricIcon, getMetricLabel } from '@/services/BaselineService';
 import { DailyLog, getDailyLog } from '@/services/StorageService';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
@@ -280,44 +281,6 @@ export default function DashboardScreen() {
               };
             };
 
-            // Function to parse and format the message with highlighted numbers
-            const formatMessage = (message: string, numberColor: string) => {
-              // Split message by numbers and units (e.g., "3.5/5", "7+ hours", "50%")
-              const parts: Array<{ text: string; isNumber: boolean }> = [];
-              const regex = /(\d+\.?\d*\s*[+]?\s*(?:\/\d+|hours?|h|%|out of \d+)?)/g;
-              let lastIndex = 0;
-              let match;
-
-              while ((match = regex.exec(message)) !== null) {
-                // Add text before the number
-                if (match.index > lastIndex) {
-                  parts.push({ text: message.slice(lastIndex, match.index), isNumber: false });
-                }
-                // Add the number
-                parts.push({ text: match[0], isNumber: true });
-                lastIndex = match.index + match[0].length;
-              }
-              
-              // Add remaining text
-              if (lastIndex < message.length) {
-                parts.push({ text: message.slice(lastIndex), isNumber: false });
-              }
-
-              return (
-                <Text className="text-gray-800 text-base leading-6">
-                  {parts.map((part, idx) => 
-                    part.isNumber ? (
-                      <Text key={idx} className="font-bold text-lg" style={{ color: numberColor }}>
-                        {part.text}
-                      </Text>
-                    ) : (
-                      <Text key={idx}>{part.text}</Text>
-                    )
-                  )}
-                </Text>
-              );
-            };
-
             const colors = getInsightColor(insight.impact, insight.confidence);
             const insightIcon = getInsightIcon(insight.type, insight.impact);
 
@@ -345,7 +308,11 @@ export default function DashboardScreen() {
                   )}
                 </View>
                 
-                {formatMessage(insight.message, colors.numberColor)}
+                <InsightMessageWithCitations
+                  message={insight.message}
+                  citations={insight.citations}
+                  numberColor={colors.numberColor}
+                />
               </View>
             );
           })}

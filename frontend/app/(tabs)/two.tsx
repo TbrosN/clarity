@@ -1,4 +1,5 @@
 import { apiService } from '@/services/ApiService';
+import InsightMessageWithCitations from '@/components/InsightMessageWithCitations';
 import { generateInsights, Insight } from '@/services/InsightService';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -125,7 +126,11 @@ export default function HistoryScreen() {
           <Text className="text-[#2C3E50] font-bold text-xl mb-3">Insights</Text>
           {insights.map((insight, index) => (
             <View key={index} className="bg-[#FFF5EB] p-4 rounded-2xl mb-2 border border-[#FFDCC2]">
-              <Text className="text-[#2C3E50]">{insight.message}</Text>
+              <InsightMessageWithCitations
+                message={insight.message}
+                citations={insight.citations}
+                numberColor="#2C3E50"
+              />
             </View>
           ))}
         </View>
