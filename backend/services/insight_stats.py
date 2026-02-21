@@ -248,7 +248,8 @@ def build_insight_stats_payload(logs: list[dict], window_days: int = 14) -> Insi
         source_metric_keys: list[str],
         action_hint: str,
     ) -> None:
-        if len(good_values) < 2 or len(poor_values) < 2:
+        min_samples_per_bucket = 1 if window_days <= 7 else 2
+        if len(good_values) < min_samples_per_bucket or len(poor_values) < min_samples_per_bucket:
             return
         mean_good = round(_avg(good_values), 2)
         mean_poor = round(_avg(poor_values), 2)

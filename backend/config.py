@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,13 +20,16 @@ class Settings(BaseSettings):
     cors_origins: str
 
     # LLM insights (optional)
-    llm_insights_enabled: bool = False
-    llm_api_key: str | None = None
-    llm_model: str = "gpt-4o-mini"
-    llm_base_url: str = "https://api.openai.com/v1"
+    llm_insights_enabled: bool = True
+    llm_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("LLM_API_KEY", "AWS_BEARER_TOKEN_BEDROCK"),
+    )
+    llm_model: str = "anthropic.claude-3-5-haiku-20241022-v1:0"
+    llm_base_url: str = "https://bedrock-runtime.us-east-1.amazonaws.com"
     llm_timeout_seconds: float = 15.0
     llm_insights_max_items: int = 4
-    insights_window_days: int = Field(default=14, ge=7, le=14)
+    insights_window_days: int = Field(default=7, ge=7, le=14)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

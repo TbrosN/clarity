@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from urllib.parse import quote
 
 import httpx
 
@@ -92,7 +93,7 @@ def build_system_prompt() -> str:
         "Apply Dale Carnegie style principles: never criticize, highlight user agency, "
         "frame suggestions in terms of the user's goals, and be encouraging. "
         "You MUST output valid JSON only, with no markdown. "
-        "Every sentence containing a number must include [[cite:fact_id]]. "
+        "Every number or claim you make must include a citation `[[cite:fact_id]]`. "
         "Use only fact_ids from the provided registry."
     )
 
@@ -118,19 +119,24 @@ class LLMInsightsClient:
 
     async def generate(self, stats: InsightStatsPayload, max_insights: int = 4) -> LLMInsightResponse:
         payload = build_prompt_payload(stats=stats, max_insights=max_insights)
-        messages = [
-            {"role": "system", "content": build_system_prompt()},
-            {"role": "user", "content": json.dumps(payload, ensure_ascii=True)},
-        ]
+        user_content = json.dumps(payload, ensure_ascii=True)
         request_body = {
-            "model": self.model,
-            "temperature": 0.3,
-            "response_format": {"type": "json_object"},
-            "messages": messages,
+            "system": [{"text": build_system_prompt()}],
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [{"text": user_content}],
+                }
+            ],
+            "inferenceConfig": {
+                "temperature": 0.3,
+                "maxTokens": 1200,
+            },
         }
+        model_path = quote(self.model, safe="")
         async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
             response = await client.post(
-                f"{self.base_url}/chat/completions",
+                f"{self.base_url}/model/{model_path}/converse",
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json",
@@ -139,7 +145,14 @@ class LLMInsightsClient:
             )
             response.raise_for_status()
             data = response.json()
-        content = data["choices"][0]["message"]["content"]
+        content_blocks = data.get("output", {}).get("message", {}).get("content", [])
+        content = "".join(
+            block.get("text", "")
+            for block in content_blocks
+            if isinstance(block, dict) and isinstance(block.get("text"), str)
+        )
+        if not content.strip():
+            raise ValueError("Bedrock response did not contain text content")
         parsed = _extract_json_object(content)
         return LLMInsightResponse.model_validate(parsed)
 

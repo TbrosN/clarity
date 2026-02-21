@@ -375,7 +375,7 @@ async def insights(user_id: str = Depends(get_current_user_id)):
     data = await history(days=settings.insights_window_days, user_id=user_id)
     logs = data["logs"]
 
-    if len(logs) < 5:
+    if len(logs) < 3:
         return [
             Insight(
                 type="tip",
@@ -711,14 +711,6 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
     data = await history(days=30, user_id=user_id)
     logs = data["logs"]
 
-    if len(logs) < 5:
-        return PersonalBaselinesResponse(
-            baselines=[],
-            behavior_impacts=[],
-            tracking_days=len(logs),
-            last_updated=datetime.now(UTC),
-        )
-
     # ---------------------------------------------------------------------------
     # Calculate Personal Baselines
     # ---------------------------------------------------------------------------
@@ -733,19 +725,6 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
         deviation = (recent_sleep - baseline_sleep) if recent_sleep else None
         deviation_pct = (deviation / baseline_sleep * 100) if deviation and baseline_sleep else None
 
-        interpretation = None
-        if deviation_pct:
-            if deviation_pct >= 10:
-                interpretation = "significantly better than your baseline"
-            elif deviation_pct >= 5:
-                interpretation = "better than your baseline"
-            elif deviation_pct <= -10:
-                interpretation = "significantly worse than your baseline"
-            elif deviation_pct <= -5:
-                interpretation = "worse than your baseline"
-            else:
-                interpretation = "consistent with your baseline"
-
         baselines.append(BaselineMetric(
             metric="sleepQuality",
             baseline=round(baseline_sleep, 2),
@@ -753,7 +732,7 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
             deviation=round(deviation, 2) if deviation else None,
             deviation_percentage=round(deviation_pct, 1) if deviation_pct else None,
             unit="out of 5",
-            interpretation=interpretation,
+            interpretation=None,
         ))
 
     # Energy Level Baseline
@@ -765,19 +744,6 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
         deviation = (recent_energy - baseline_energy) if recent_energy else None
         deviation_pct = (deviation / baseline_energy * 100) if deviation and baseline_energy else None
 
-        interpretation = None
-        if deviation_pct:
-            if deviation_pct >= 15:
-                interpretation = "much higher than your typical energy"
-            elif deviation_pct >= 7:
-                interpretation = "higher than your typical energy"
-            elif deviation_pct <= -15:
-                interpretation = "much lower than your typical energy"
-            elif deviation_pct <= -7:
-                interpretation = "lower than your typical energy"
-            else:
-                interpretation = "typical for you"
-
         baselines.append(BaselineMetric(
             metric="energy",
             baseline=round(baseline_energy, 2),
@@ -785,7 +751,7 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
             deviation=round(deviation, 2) if deviation else None,
             deviation_percentage=round(deviation_pct, 1) if deviation_pct else None,
             unit="out of 5",
-            interpretation=interpretation,
+            interpretation=None,
         ))
 
     # Sleep Duration Baseline
@@ -804,19 +770,6 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
         deviation = (recent_duration - baseline_duration) if recent_duration else None
         deviation_pct = (deviation / baseline_duration * 100) if deviation and baseline_duration else None
 
-        interpretation = None
-        if deviation_pct:
-            if deviation_pct >= 10:
-                interpretation = f"sleeping {abs(deviation):.1f}h more than your baseline"
-            elif deviation_pct >= 5:
-                interpretation = f"sleeping slightly more than usual (+{abs(deviation):.1f}h)"
-            elif deviation_pct <= -10:
-                interpretation = f"sleeping {abs(deviation):.1f}h less than your baseline"
-            elif deviation_pct <= -5:
-                interpretation = f"sleeping slightly less than usual (-{abs(deviation):.1f}h)"
-            else:
-                interpretation = "consistent with your typical duration"
-
         baselines.append(BaselineMetric(
             metric="sleepDuration",
             baseline=round(baseline_duration, 2),
@@ -824,7 +777,7 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
             deviation=round(deviation, 2) if deviation else None,
             deviation_percentage=round(deviation_pct, 1) if deviation_pct else None,
             unit="hours",
-            interpretation=interpretation,
+            interpretation=None,
         ))
 
     # Stress Level Baseline
@@ -836,19 +789,6 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
         deviation = (recent_stress - baseline_stress) if recent_stress else None
         deviation_pct = (deviation / baseline_stress * 100) if deviation and baseline_stress else None
 
-        interpretation = None
-        if deviation_pct:
-            if deviation_pct >= 15:
-                interpretation = "significantly more stressed than usual"
-            elif deviation_pct >= 7:
-                interpretation = "more stressed than usual"
-            elif deviation_pct <= -15:
-                interpretation = "much less stressed than usual"
-            elif deviation_pct <= -7:
-                interpretation = "less stressed than usual"
-            else:
-                interpretation = "typical stress levels"
-
         baselines.append(BaselineMetric(
             metric="stress",
             baseline=round(baseline_stress, 2),
@@ -856,7 +796,7 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
             deviation=round(deviation, 2) if deviation else None,
             deviation_percentage=round(deviation_pct, 1) if deviation_pct else None,
             unit="out of 5",
-            interpretation=interpretation,
+            interpretation=None,
         ))
 
     # ---------------------------------------------------------------------------
@@ -882,11 +822,6 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
         late_avg = _safe_avg(late_screen_sleep)
         impact = early_avg - late_avg
 
-        confidence = "high" if len(early_screen_sleep) >= 5 and len(late_screen_sleep) >= 5 else "medium"
-        recommendation = None
-        if impact >= 0.5:
-            recommendation = f"For YOU, turning off screens early consistently improves sleep quality by {impact:.1f} points"
-
         behavior_impacts.append(BehaviorImpact(
             behavior="screensOff",
             behavior_label="Screen Time Management",
@@ -897,8 +832,8 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
             your_impact=round(impact, 2),
             sample_size_good=len(early_screen_sleep),
             sample_size_poor=len(late_screen_sleep),
-            confidence=confidence,
-            recommendation=recommendation,
+            confidence=None,
+            recommendation=None,
         ))
 
     # Caffeine Impact on Sleep Quality
@@ -919,13 +854,6 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
         late_avg = _safe_avg(late_caffeine_sleep)
         impact = early_avg - late_avg
 
-        confidence = "high" if len(early_caffeine_sleep) >= 5 and len(late_caffeine_sleep) >= 5 else "medium"
-        recommendation = None
-        if impact >= 0.5:
-            recommendation = f"Your body shows a {impact:.1f} point sleep improvement when avoiding late caffeine"
-        elif impact <= -0.3:
-            recommendation = "Interestingly, caffeine timing doesn't seem to negatively affect YOUR sleep"
-
         behavior_impacts.append(BehaviorImpact(
             behavior="caffeine",
             behavior_label="Caffeine Timing",
@@ -936,8 +864,8 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
             your_impact=round(impact, 2),
             sample_size_good=len(early_caffeine_sleep),
             sample_size_poor=len(late_caffeine_sleep),
-            confidence=confidence,
-            recommendation=recommendation,
+            confidence=None,
+            recommendation=None,
         ))
 
     # Meal Timing Impact on Sleep Quality
@@ -958,11 +886,6 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
         late_avg = _safe_avg(late_meal_sleep)
         impact = early_avg - late_avg
 
-        confidence = "high" if len(early_meal_sleep) >= 5 and len(late_meal_sleep) >= 5 else "medium"
-        recommendation = None
-        if impact >= 0.5:
-            recommendation = f"Eating dinner earlier gives YOU {impact:.1f} points better sleep"
-
         behavior_impacts.append(BehaviorImpact(
             behavior="lastMeal",
             behavior_label="Meal Timing",
@@ -973,8 +896,8 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
             your_impact=round(impact, 2),
             sample_size_good=len(early_meal_sleep),
             sample_size_poor=len(late_meal_sleep),
-            confidence=confidence,
-            recommendation=recommendation,
+            confidence=None,
+            recommendation=None,
         ))
 
     # Sleep Quality Impact on Energy (your personal response)
@@ -995,11 +918,6 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
         poor_avg = _safe_avg(poor_sleep_energy)
         impact = good_avg - poor_avg
 
-        confidence = "high" if len(good_sleep_energy) >= 5 and len(poor_sleep_energy) >= 5 else "medium"
-        recommendation = None
-        if impact >= 0.5:
-            recommendation = f"For YOUR body, good sleep translates to {impact:.1f} points more energy"
-
         behavior_impacts.append(BehaviorImpact(
             behavior="sleepQuality",
             behavior_label="Sleep Quality",
@@ -1010,8 +928,8 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
             your_impact=round(impact, 2),
             sample_size_good=len(good_sleep_energy),
             sample_size_poor=len(poor_sleep_energy),
-            confidence=confidence,
-            recommendation=recommendation,
+            confidence=None,
+            recommendation=None,
         ))
 
     # Sleep Duration Impact on Energy (personalized optimal duration)
@@ -1046,11 +964,6 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
             best_duration = "7-8 hours"
 
         impact = best_avg - short_avg
-        confidence = "medium"
-        recommendation = None
-        if impact >= 0.5:
-            recommendation = f"YOUR optimal sleep duration appears to be {best_duration} (energy: {best_avg:.1f} vs {short_avg:.1f} when short)"
-
         behavior_impacts.append(BehaviorImpact(
             behavior="sleepDuration",
             behavior_label="Sleep Duration",
@@ -1061,8 +974,8 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
             your_impact=round(impact, 2),
             sample_size_good=max(len(long_sleep_energy), len(medium_sleep_energy)) if medium_avg else len(long_sleep_energy),
             sample_size_poor=len(short_sleep_energy),
-            confidence=confidence,
-            recommendation=recommendation,
+            confidence=None,
+            recommendation=None,
         ))
 
     # Snooze Behavior Impact on Energy (personalized)
@@ -1083,13 +996,6 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
         snooze_avg = _safe_avg(snooze_energy)
         impact = no_snooze_avg - snooze_avg
 
-        confidence = "high" if len(no_snooze_energy) >= 5 and len(snooze_energy) >= 5 else "medium"
-        recommendation = None
-        if impact >= 0.4:
-            recommendation = f"For YOU, getting up immediately adds {impact:.1f} points to morning energy"
-        elif impact <= -0.3:
-            recommendation = "Interestingly, snoozing doesn't seem to hurt YOUR energy levels"
-
         behavior_impacts.append(BehaviorImpact(
             behavior="snooze",
             behavior_label="Snooze Behavior",
@@ -1100,8 +1006,8 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
             your_impact=round(impact, 2),
             sample_size_good=len(no_snooze_energy),
             sample_size_poor=len(snooze_energy),
-            confidence=confidence,
-            recommendation=recommendation,
+            confidence=None,
+            recommendation=None,
         ))
 
     # Sort behavior impacts by absolute impact magnitude

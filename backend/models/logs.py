@@ -132,7 +132,7 @@ class BehaviorImpact(BaseModel):
     your_impact: float  # Difference (when_good - when_poor)
     sample_size_good: int
     sample_size_poor: int
-    confidence: str
+    confidence: str | None = None
     recommendation: str | None = None
 
 
