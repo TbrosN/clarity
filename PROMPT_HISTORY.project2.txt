@@ -24,3 +24,7 @@ no I want to use bar graphs or other very intuitive and clear graphs of the data
 for the graphs, rather than showing base and now, it would be more useful to just show either how close we are to optimal, or how it has changed over the past [time frame]
 
 awesome, let's just add a more clear scale to the graphs so it's easy to tell what the max value is and what height each bar is at.
+
+@frontend/app/(tabs)/index.tsx let's redesign this to look sleek with this apple-esque design used by a lot of modern startups, e.g. see the attached image. make a plan for this
+
+@frontend/app/(tabs)/index.tsx let's redesign this to look sleek with this apple-esque design used by a lot of modern startups, e.g. see the attached image. make a plan for this

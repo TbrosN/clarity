@@ -10,12 +10,14 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const [todayLog, setTodayLog] = useState<DailyLog | null>(null);
   const [recentLogs, setRecentLogs] = useState<DailyLog[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -104,220 +106,113 @@ export default function DashboardScreen() {
 
   const surveysCompleted = [beforeBedComplete, afterWakeComplete].filter(Boolean).length;
   const topInsight = insights.find(i => i.confidence === 'high') || insights[0];
+  const isTablet = width >= 768;
+  const isDesktop = width >= 1080;
+  const maxContentWidth = isDesktop ? 1120 : isTablet ? 920 : 720;
+  const metricColumns = isDesktop ? 3 : 2;
+  const surveyCardDirection = isTablet ? 'row' : 'column';
 
   const getInsightStyle = (insight: Insight) => {
     if (insight.impact === 'positive') return {
-      bg: '#ECFDF5', border: '#A7F3D0', icon: '✨',
-      badgeBg: '#BBF7D0', badgeText: '#065F46', numColor: '#059669',
+      bg: '#EEF9F4', border: '#CAECDC', icon: '✨',
+      badgeBg: '#D8F3E6', badgeText: '#25634A', numColor: '#2E8B67',
     };
     if (insight.impact === 'negative') return {
-      bg: '#FEF2F2', border: '#FECACA', icon: '⚠️',
-      badgeBg: '#FECACA', badgeText: '#991B1B', numColor: '#DC2626',
+      bg: '#FEF4F4', border: '#F6D3D3', icon: '⚠️',
+      badgeBg: '#F9DFDF', badgeText: '#8F3A3A', numColor: '#C25252',
     };
     if (insight.type === 'streak') return {
-      bg: '#FFF7ED', border: '#FED7AA', icon: '🔥',
-      badgeBg: '#FED7AA', badgeText: '#92400E', numColor: '#D97706',
+      bg: '#FFF8EF', border: '#F4DFC4', icon: '🔥',
+      badgeBg: '#F5E4CE', badgeText: '#8B5A27', numColor: '#B5762D',
     };
     return {
-      bg: '#EFF6FF', border: '#BFDBFE', icon: '💡',
-      badgeBg: '#BFDBFE', badgeText: '#1E40AF', numColor: '#2563EB',
+      bg: '#EFF3FF', border: '#D5DFFB', icon: '💡',
+      badgeBg: '#DCE4FC', badgeText: '#3B4A87', numColor: '#5163A8',
     };
   };
 
-  return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={{ paddingBottom: 48 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#94A3B8" />}
-    >
-      {/* ── Hero Header ── */}
-      <LinearGradient colors={['#0F172A', '#1E293B', '#263548']} style={styles.header}>
-        <Text style={styles.greeting}>{getGreeting()}</Text>
-        <Text style={styles.appTitle}>Clarity</Text>
-        <Text style={styles.dateLabel}>{formatDate()}</Text>
+  const renderMetricsSection = () => {
+    if (!baselines) return null;
 
-        {/* Survey completion progress */}
-        <View style={styles.progressRow}>
-          <View style={styles.dotRow}>
-            {[0, 1].map(i => (
-              <View
-                key={i}
-                style={[styles.dot, { backgroundColor: i < surveysCompleted ? '#10B981' : '#334155' }]}
-              />
-            ))}
-          </View>
-          <Text style={styles.progressText}>
-            {surveysCompleted === 2 ? 'All surveys done today  🎉' : `${surveysCompleted} of 2 surveys complete`}
-          </Text>
+    const metrics = baselines.baselines;
+    const rows: (typeof baselines.baselines)[] = [];
+    for (let i = 0; i < metrics.length; i += metricColumns) rows.push(metrics.slice(i, i + metricColumns));
+
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Health snapshot</Text>
+          <Text style={styles.sectionMeta}>Last 7 days</Text>
         </View>
-      </LinearGradient>
-
-      <View style={styles.body}>
-
-        {/* ── Daily Surveys ── */}
-        <View style={styles.sectionRow}>
-          {/* Before Bed card */}
-          <TouchableOpacity
-            style={styles.surveyCard}
-            activeOpacity={0.85}
-            onPress={() => router.push('/survey?type=beforeBed')}
-          >
-            <LinearGradient
-              colors={beforeBedComplete ? ['#064E3B', '#065F46'] : ['#1E293B', '#0F172A']}
-              style={styles.surveyCardInner}
-            >
-              <Text style={styles.surveyEmoji}>🌙</Text>
-              <Text style={styles.surveyTitle}>Before Bed</Text>
-              <Text style={[styles.surveySubtitle, { color: beforeBedComplete ? '#6EE7B7' : '#64748B' }]}>
-                {beforeBedComplete ? 'Completed ✓' : '5 questions'}
-              </Text>
-              <View style={[styles.surveyBtn, { backgroundColor: beforeBedComplete ? '#10B981' : '#334155' }]}>
-                <Text style={styles.surveyBtnText}>{beforeBedComplete ? 'Edit' : 'Start →'}</Text>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* After Wake card */}
-          <TouchableOpacity
-            style={styles.surveyCard}
-            activeOpacity={0.85}
-            onPress={() => router.push('/survey?type=afterWake')}
-          >
-            <LinearGradient
-              colors={afterWakeComplete ? ['#064E3B', '#065F46'] : ['#78350F', '#92400E']}
-              style={styles.surveyCardInner}
-            >
-              <Text style={styles.surveyEmoji}>☀️</Text>
-              <Text style={styles.surveyTitle}>After Wake</Text>
-              <Text style={[styles.surveySubtitle, { color: afterWakeComplete ? '#6EE7B7' : '#FCD34D' }]}>
-                {afterWakeComplete ? 'Completed ✓' : '6 questions'}
-              </Text>
-              <View style={[styles.surveyBtn, { backgroundColor: afterWakeComplete ? '#10B981' : '#D97706' }]}>
-                <Text style={styles.surveyBtnText}>{afterWakeComplete ? 'Edit' : 'Start →'}</Text>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Top Insight ── */}
-        {topInsight && (() => {
-          const s = getInsightStyle(topInsight);
-          return (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Top Insight</Text>
-                {insights.length > 1 && (
-                  <Link href="/modal" asChild>
-                    <TouchableOpacity>
-                      <Text style={styles.sectionLink}>View all ({insights.length}) →</Text>
-                    </TouchableOpacity>
-                  </Link>
-                )}
-              </View>
-
-              <View style={[styles.insightCard, { backgroundColor: s.bg, borderColor: s.border }]}>
-                <View style={styles.insightCardHeader}>
-                  <Text style={styles.insightIcon}>{s.icon}</Text>
-                  <View style={[styles.badge, { backgroundColor: s.badgeBg }]}>
-                    <Text style={[styles.badgeText, { color: s.badgeText }]}>
-                      {topInsight.confidence ?? 'personalized'}
-                    </Text>
-                  </View>
-                </View>
-                <InsightMessageWithCitations
-                  message={topInsight.message}
-                  citations={topInsight.citations}
-                  numberColor={s.numColor}
-                />
-              </View>
-            </View>
-          );
-        })()}
-
-        {/* ── Your Metrics ── */}
-        {baselines && baselines.tracking_days >= 5 && baselines.baselines.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Your Metrics</Text>
-              <Link href="/baselines" asChild>
-                <TouchableOpacity>
-                  <Text style={styles.sectionLink}>View all →</Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.metricsScroll}
-            >
-              {baselines.baselines.slice(0, 5).map((baseline) => {
+        <View style={styles.metricGrid}>
+          {rows.map((row, rowIdx) => (
+            <View key={rowIdx} style={styles.kpiRow}>
+              {row.map((baseline) => {
                 const devColor = getDeviationColor(baseline.deviation_percentage, baseline.metric);
+                const displayVal = baseline.current_value ?? baseline.baseline;
+                const isStressMetric = baseline.metric === 'stress';
 
-                // Build 7-day sparkline data (oldest → newest)
                 const last7 = recentLogs.slice(-7);
                 const sparkVals = last7.map(log => getMetricValueFromLog(log, baseline.metric));
                 const validVals = sparkVals.filter(v => v !== null) as number[];
-                const isStressMetric = baseline.metric === 'stress';
-
-                // Scale: anchor min slightly below the lowest value so bars are distinguishable
-                const dataMax = validVals.length > 0 ? Math.max(...validVals, baseline.baseline) : baseline.baseline;
+                const dataMax = validVals.length > 0
+                  ? Math.max(...validVals, baseline.baseline) * 1.02
+                  : baseline.baseline * 1.2;
                 const dataMin = validVals.length > 0
-                  ? Math.min(...validVals, baseline.baseline) * 0.9
-                  : baseline.baseline * 0.8;
+                  ? Math.min(...validVals, baseline.baseline) * 0.88
+                  : baseline.baseline * 0.75;
                 const range = Math.max(dataMax - dataMin, 0.01);
+                const baselinePct = Math.round(((baseline.baseline - dataMin) / range) * 100);
 
-                const barColor = (val: number) => {
-                  const aboveBase = isStressMetric ? val <= baseline.baseline : val >= baseline.baseline;
-                  return aboveBase ? '#10B981' : '#F87171';
-                };
+                const sparkBarColor = (val: number) =>
+                  (isStressMetric ? val <= baseline.baseline : val >= baseline.baseline)
+                    ? '#2E8B67'
+                    : '#CD6C6C';
+
+                const devPct = baseline.deviation_percentage;
+                const trendText = devPct === null
+                  ? null
+                  : Math.abs(devPct) < 2
+                    ? 'On track'
+                    : `${devPct > 0 ? 'Up' : 'Down'} ${Math.abs(devPct).toFixed(0)}%`;
 
                 return (
-                  <View key={baseline.metric} style={styles.metricCard}>
-                    <Text style={styles.metricEmoji}>{getMetricIcon(baseline.metric)}</Text>
-                    <Text style={styles.metricLabel} numberOfLines={1}>
-                      {getMetricLabel(baseline.metric)}
-                    </Text>
-
-                    {/* 7-day sparkline */}
-                    <View style={styles.sparklineRow}>
-                      {/* Y-axis scale labels */}
-                      <View style={styles.sparkYAxis}>
-                        <Text style={styles.sparkYLabel}>{dataMax.toFixed(1)}</Text>
-                        <Text style={styles.sparkYLabel}>
-                          {baseline.baseline.toFixed(1)}
-                        </Text>
-                        <Text style={styles.sparkYLabel}>{dataMin.toFixed(1)}</Text>
+                  <View key={baseline.metric} style={styles.kpiCard}>
+                    <View style={styles.kpiHeader}>
+                      <View style={[styles.kpiAccent, { backgroundColor: `${devColor}24` }]}>
+                        <Text style={styles.kpiEmoji}>{getMetricIcon(baseline.metric)}</Text>
                       </View>
+                      <Text style={styles.kpiName} numberOfLines={1}>
+                        {getMetricLabel(baseline.metric)}
+                      </Text>
+                    </View>
 
-                      {/* Chart area */}
-                      <View style={styles.sparkChartArea}>
-                        {/* Baseline reference line */}
-                        <View
-                          style={[
-                            styles.sparkBaseline,
-                            {
-                              bottom: `${Math.round(((baseline.baseline - dataMin) / range) * 100)}%`,
-                            },
-                          ]}
-                        />
-                        {/* Bars */}
-                        <View style={styles.sparkBars}>
+                    <Text style={styles.kpiValue}>{displayVal.toFixed(1)}</Text>
+                    <Text style={styles.kpiUnit}>{baseline.unit}</Text>
+
+                    <View style={styles.kpiSparkRow}>
+                      <View style={styles.kpiYAxis}>
+                        <Text style={styles.kpiYLabel}>{dataMax.toFixed(1)}</Text>
+                        <Text style={styles.kpiYLabel}>{dataMin.toFixed(1)}</Text>
+                      </View>
+                      <View style={styles.kpiChartArea}>
+                        <View style={[styles.kpiBaseline, { bottom: `${baselinePct}%` }]} />
+                        <View style={styles.kpiBars}>
                           {sparkVals.map((val, idx) => {
                             if (val === null) {
                               return (
-                                <View key={idx} style={styles.sparkBarSlot}>
-                                  <View style={styles.sparkBarEmpty} />
+                                <View key={idx} style={styles.kpiBarSlot}>
+                                  <View style={styles.kpiBarEmpty} />
                                 </View>
                               );
                             }
-                            const heightPct = Math.max(((val - dataMin) / range) * 100, 4);
+                            const hp = Math.max(((val - dataMin) / range) * 100, 4);
                             return (
-                              <View key={idx} style={styles.sparkBarSlot}>
+                              <View key={idx} style={styles.kpiBarSlot}>
                                 <View
                                   style={[
-                                    styles.sparkBar,
-                                    { height: `${Math.min(heightPct, 100)}%`, backgroundColor: barColor(val) },
+                                    styles.kpiBar,
+                                    { height: `${Math.min(hp, 100)}%`, backgroundColor: sparkBarColor(val) },
                                   ]}
                                 />
                               </View>
@@ -327,51 +222,162 @@ export default function DashboardScreen() {
                       </View>
                     </View>
 
-                    <Text style={styles.sparkLabel}>7-day trend  ·  avg {baseline.baseline.toFixed(1)} {baseline.unit}</Text>
-
-                    {/* Deviation pill */}
-                    {baseline.deviation_percentage !== null && (
-                      <View style={[styles.deviationPill, { backgroundColor: `${devColor}22` }]}>
-                        <Text style={[styles.deviationText, { color: devColor }]}>
-                          {baseline.deviation_percentage > 0 ? '↑' : '↓'}{' '}
-                          {Math.abs(baseline.deviation_percentage).toFixed(0)}% vs avg
+                    {trendText && (
+                      <View style={[styles.kpiTrend, { backgroundColor: `${devColor}16` }]}>
+                        <Text style={[styles.kpiTrendText, { color: devColor }]}>
+                          {trendText} vs baseline
                         </Text>
                       </View>
                     )}
                   </View>
                 );
               })}
+              {row.length < metricColumns &&
+                Array.from({ length: metricColumns - row.length }).map((_, idx) => (
+                  <View key={`spacer-${idx}`} style={styles.kpiCardSpacer} />
+                ))}
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
 
-              {/* "Full Analysis" end card */}
-              <Link href="/baselines" asChild>
-                <TouchableOpacity style={styles.metricCardDark} activeOpacity={0.85}>
-                  <Text style={styles.metricEmoji}>📊</Text>
-                  <Text style={styles.metricCardDarkTitle}>Full Analysis</Text>
-                  <Text style={styles.metricCardDarkSub}>Behavior impacts & trends</Text>
-                </TouchableOpacity>
-              </Link>
-            </ScrollView>
-          </View>
-        ) : baselines && baselines.tracking_days > 0 && baselines.tracking_days < 5 ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Metrics</Text>
-            <View style={styles.progressCard}>
-              <View style={styles.progressCardHeader}>
-                <Text style={styles.progressCardEmoji}>📊</Text>
-                <Text style={styles.progressCardTitle}>Building your baselines</Text>
-              </View>
-              <Text style={styles.progressCardSub}>
-                {5 - baselines.tracking_days} more day{5 - baselines.tracking_days !== 1 ? 's' : ''} to unlock personalized insights
+  const renderSurveySection = () => (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Log today</Text>
+        <Text style={styles.sectionMeta}>Two quick check-ins</Text>
+      </View>
+      <View style={[styles.sectionRow, { flexDirection: surveyCardDirection }]}>
+        <TouchableOpacity
+          style={styles.surveyCard}
+          activeOpacity={0.86}
+          onPress={() => router.push('/survey?type=beforeBed')}
+        >
+          <LinearGradient
+            colors={beforeBedComplete ? ['#304E43', '#223C35'] : ['#20242C', '#171A21']}
+            style={styles.surveyCardInner}
+          >
+            <Text style={styles.surveyEmoji}>Moon</Text>
+            <Text style={styles.surveyTitle}>Before Bed</Text>
+            <Text style={[styles.surveySubtitle, { color: beforeBedComplete ? '#B7E6D4' : '#AAB0BB' }]}>
+              {beforeBedComplete ? 'Completed' : '5 questions'}
+            </Text>
+            <View style={[styles.surveyBtn, { backgroundColor: beforeBedComplete ? '#4E8B73' : '#343944' }]}>
+              <Text style={styles.surveyBtnText}>{beforeBedComplete ? 'Edit' : 'Start'}</Text>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.surveyCard}
+          activeOpacity={0.86}
+          onPress={() => router.push('/survey?type=afterWake')}
+        >
+          <LinearGradient
+            colors={afterWakeComplete ? ['#4A6B5D', '#365347'] : ['#6A5039', '#573E2A']}
+            style={styles.surveyCardInner}
+          >
+            <Text style={styles.surveyEmoji}>Sun</Text>
+            <Text style={styles.surveyTitle}>After Wake</Text>
+            <Text style={[styles.surveySubtitle, { color: afterWakeComplete ? '#CBE8DA' : '#F1D6B6' }]}>
+              {afterWakeComplete ? 'Completed' : '6 questions'}
+            </Text>
+            <View style={[styles.surveyBtn, { backgroundColor: afterWakeComplete ? '#5D967E' : '#8D6440' }]}>
+              <Text style={styles.surveyBtnText}>{afterWakeComplete ? 'Edit' : 'Start'}</Text>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderInsightSection = () => {
+    if (!topInsight) return null;
+    const s = getInsightStyle(topInsight);
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Top insight</Text>
+          {insights.length > 1 && (
+            <Link href="/modal" asChild>
+              <TouchableOpacity activeOpacity={0.75}>
+                <Text style={styles.sectionLink}>View all ({insights.length})</Text>
+              </TouchableOpacity>
+            </Link>
+          )}
+        </View>
+        <View style={[styles.insightCard, { backgroundColor: s.bg, borderColor: s.border }]}>
+          <View style={styles.insightCardHeader}>
+            <Text style={styles.insightIcon}>{s.icon}</Text>
+            <View style={[styles.badge, { backgroundColor: s.badgeBg }]}>
+              <Text style={[styles.badgeText, { color: s.badgeText }]}>
+                {topInsight.confidence ?? 'personalized'}
               </Text>
-              <View style={styles.progressBarTrack}>
-                <View style={[styles.progressBarFill, { width: `${(baselines.tracking_days / 5) * 100}%` }]} />
-              </View>
-              <Text style={styles.progressCardCount}>{baselines.tracking_days} of 5 days tracked</Text>
             </View>
           </View>
-        ) : null}
+          <InsightMessageWithCitations
+            message={topInsight.message}
+            citations={topInsight.citations}
+            numberColor={s.numColor}
+          />
+        </View>
+      </View>
+    );
+  };
 
+  return (
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.screenContent}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#8F949D" />}
+    >
+      <View style={[styles.page, { maxWidth: maxContentWidth }]}>
+        <LinearGradient colors={['#FFFFFF', '#F8F9FC']} style={styles.headerCard}>
+          <View style={styles.headerTopRow}>
+            <View>
+              <Text style={styles.greeting}>{getGreeting()}</Text>
+              <Text style={styles.appTitle}>Clarity</Text>
+              <Text style={styles.dateLabel}>{formatDate()}</Text>
+            </View>
+            <View style={styles.statusPill}>
+              <View style={styles.dotRow}>
+                {[0, 1].map(i => (
+                  <View
+                    key={i}
+                    style={[styles.dot, { backgroundColor: i < surveysCompleted ? '#2E8B67' : '#CFD3DA' }]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.statusPillText}>{surveysCompleted}/2 done</Text>
+            </View>
+          </View>
+          <View style={styles.progressRow}>
+            <Text style={styles.progressLabel}>
+              {surveysCompleted === 2 ? 'All surveys completed today' : 'Complete both check-ins for your daily baseline'}
+            </Text>
+            <Text style={styles.progressMeta}>
+              {todayLog ? 'Log started' : 'No entries yet'}
+            </Text>
+          </View>
+        </LinearGradient>
 
+        {isDesktop ? (
+          <View style={styles.desktopGrid}>
+            <View style={styles.desktopMainColumn}>{renderMetricsSection()}</View>
+            <View style={styles.desktopSideColumn}>
+              {renderSurveySection()}
+              {renderInsightSection()}
+            </View>
+          </View>
+        ) : (
+          <View style={styles.body}>
+            {renderMetricsSection()}
+            {renderSurveySection()}
+            {renderInsightSection()}
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -380,128 +386,211 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F3F4F6',
+  },
+  screenContent: {
+    paddingBottom: 56,
+    paddingHorizontal: 14,
+    paddingTop: 18,
+    alignItems: 'center',
+  },
+  page: {
+    width: '100%',
   },
 
   // Header
-  header: {
-    paddingTop: 68,
-    paddingBottom: 28,
+  headerCard: {
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: '#E4E7EC',
     paddingHorizontal: 24,
+    paddingVertical: 22,
+    shadowColor: '#0A0A0A',
+    shadowOpacity: 0.06,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
+    marginBottom: 20,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 14,
   },
   greeting: {
-    color: '#64748B',
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 2,
-    letterSpacing: 0.3,
+    color: '#70757F',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+    letterSpacing: 0.2,
   },
   appTitle: {
-    color: '#FFFFFF',
-    fontSize: 34,
+    color: '#121418',
+    fontSize: 36,
     fontWeight: '800',
     marginBottom: 4,
-    letterSpacing: -0.5,
+    letterSpacing: -1.1,
   },
   dateLabel: {
-    color: '#475569',
-    fontSize: 13,
-    marginBottom: 22,
+    color: '#8A909A',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  statusPill: {
+    borderRadius: 999,
+    backgroundColor: '#F0F2F5',
+    borderWidth: 1,
+    borderColor: '#E3E6EB',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    alignItems: 'center',
+    gap: 7,
+  },
+  statusPillText: {
+    color: '#59606C',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   progressRow: {
+    marginTop: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8EAEE',
+    backgroundColor: '#FBFBFC',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+  },
+  progressLabel: {
+    color: '#4C525D',
+    fontSize: 13,
+    flex: 1,
+    fontWeight: '500',
+  },
+  progressMeta: {
+    color: '#7D838F',
+    fontSize: 12,
+    fontWeight: '600',
   },
   dotRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 5,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
   },
-  progressText: {
-    color: '#94A3B8',
-    fontSize: 13,
-  },
 
-  // Body
+  // Body + desktop layout
   body: {
-    padding: 20,
-    paddingTop: 22,
+    gap: 18,
+  },
+  desktopGrid: {
+    flexDirection: 'row',
+    gap: 18,
+    alignItems: 'flex-start',
+  },
+  desktopMainColumn: {
+    flex: 1.45,
+  },
+  desktopSideColumn: {
+    flex: 1,
+    gap: 18,
   },
 
-  // Section
+  // Sections
   section: {
-    marginBottom: 28,
+    marginBottom: 2,
   },
   sectionRow: {
-    flexDirection: 'row',
     gap: 12,
-    marginBottom: 28,
+    marginTop: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   sectionTitle: {
-    color: '#0F172A',
-    fontSize: 19,
+    color: '#17191E',
+    fontSize: 20,
     fontWeight: '700',
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
+  },
+  sectionMeta: {
+    color: '#8A909B',
+    fontSize: 12,
+    fontWeight: '600',
   },
   sectionLink: {
-    color: '#4F83EE',
+    color: '#4C649A',
     fontSize: 13,
     fontWeight: '600',
+  },
+  metricGrid: {
+    gap: 12,
   },
 
   // Survey cards
   surveyCard: {
     flex: 1,
-    borderRadius: 22,
+    borderRadius: 24,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    minHeight: 176,
+    shadowColor: '#111111',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   surveyCardInner: {
+    flex: 1,
     padding: 18,
+    justifyContent: 'space-between',
   },
   surveyEmoji: {
-    fontSize: 30,
+    color: '#F2F3F6',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
     marginBottom: 10,
   },
   surveyTitle: {
     color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: 15,
-    marginBottom: 3,
+    fontSize: 18,
+    marginBottom: 4,
+    letterSpacing: -0.2,
   },
   surveySubtitle: {
-    fontSize: 12,
-    marginBottom: 18,
+    fontSize: 13,
+    marginBottom: 14,
+    fontWeight: '500',
   },
   surveyBtn: {
-    borderRadius: 12,
+    borderRadius: 999,
     paddingVertical: 9,
-    alignItems: 'center',
+    paddingHorizontal: 14,
+    alignSelf: 'flex-start',
   },
   surveyBtnText: {
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
 
   // Insight card
   insightCard: {
-    borderRadius: 22,
+    borderRadius: 24,
     padding: 20,
     borderWidth: 1,
   },
@@ -512,193 +601,139 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   insightIcon: {
-    fontSize: 22,
+    fontSize: 20,
   },
   badge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: 999,
   },
   badgeText: {
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
 
-  // Metrics scroll
-  metricsScroll: {
-    paddingRight: 20,
+  // KPI grid
+  kpiRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
-  metricCard: {
+  kpiCard: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 14,
-    marginRight: 12,
-    width: 150,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
+    borderRadius: 22,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E7EAF0',
+    shadowColor: '#0E0E0E',
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
-  metricEmoji: {
-    fontSize: 22,
-    marginBottom: 6,
+  kpiCardSpacer: {
+    flex: 1,
   },
-  metricLabel: {
-    color: '#0F172A',
-    fontWeight: '700',
-    fontSize: 11,
-    marginBottom: 8,
-  },
-
-  // Sparkline
-  sparklineRow: {
+  kpiHeader: {
     flexDirection: 'row',
-    height: 52,
-    marginBottom: 4,
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
   },
-  sparkYAxis: {
-    width: 22,
+  kpiAccent: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kpiEmoji: {
+    fontSize: 13,
+  },
+  kpiName: {
+    color: '#69707C',
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+    letterSpacing: 0.1,
+  },
+  kpiValue: {
+    color: '#15181E',
+    fontSize: 29,
+    fontWeight: '800',
+    lineHeight: 34,
+    letterSpacing: -0.8,
+    marginBottom: 2,
+  },
+  kpiUnit: {
+    color: '#8A919D',
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  kpiSparkRow: {
+    flexDirection: 'row',
+    height: 50,
+    marginBottom: 10,
+  },
+  kpiYAxis: {
+    width: 24,
     height: '100%',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    paddingVertical: 0,
-    marginRight: 4,
+    marginRight: 5,
+    paddingVertical: 1,
   },
-  sparkYLabel: {
-    color: '#94A3B8',
+  kpiYLabel: {
+    color: '#D0D4DC',
     fontSize: 8,
     fontWeight: '500',
     lineHeight: 10,
   },
-  sparkChartArea: {
+  kpiChartArea: {
     flex: 1,
     height: '100%',
     position: 'relative',
   },
-  sparkBaseline: {
+  kpiBaseline: {
     position: 'absolute',
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: '#E8EBF1',
   },
-  sparkBars: {
+  kpiBars: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     height: '100%',
-    gap: 2,
+    gap: 3,
   },
-  sparkBarSlot: {
+  kpiBarSlot: {
     flex: 1,
     height: '100%',
     justifyContent: 'flex-end',
   },
-  sparkBar: {
+  kpiBar: {
     width: '100%',
-    borderRadius: 2,
-    minHeight: 3,
+    borderRadius: 3,
   },
-  sparkBarEmpty: {
+  kpiBarEmpty: {
     width: '100%',
     height: 3,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 2,
+    backgroundColor: '#F0F2F6',
+    borderRadius: 3,
   },
-  sparkLabel: {
-    color: '#94A3B8',
-    fontSize: 9,
-    marginBottom: 8,
-    letterSpacing: 0.2,
-  },
-
-  deviationPill: {
+  kpiTrend: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     borderRadius: 10,
-    paddingVertical: 3,
-    paddingHorizontal: 7,
     alignSelf: 'flex-start',
   },
-  deviationText: {
+  kpiTrendText: {
     fontSize: 10,
     fontWeight: '700',
-  },
-  metricCardDark: {
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
-    padding: 16,
-    width: 150,
-    justifyContent: 'center',
-  },
-  metricCardDarkTitle: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  metricCardDarkSub: {
-    color: '#64748B',
-    fontSize: 11,
-    lineHeight: 16,
-  },
-
-  // Progress card (< 5 days)
-  progressCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  progressCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 8,
-  },
-  progressCardEmoji: {
-    fontSize: 24,
-  },
-  progressCardTitle: {
-    color: '#0F172A',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  progressCardSub: {
-    color: '#64748B',
-    fontSize: 13,
-    marginBottom: 14,
-  },
-  progressBarTrack: {
-    backgroundColor: '#F1F5F9',
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 6,
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#F59E0B',
-    borderRadius: 4,
-  },
-  progressCardCount: {
-    color: '#94A3B8',
-    fontSize: 11,
-  },
-
-  // History link
-  historyLink: {
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  historyLinkText: {
-    color: '#94A3B8',
-    fontSize: 14,
-    fontWeight: '500',
+    letterSpacing: 0.2,
   },
 });
