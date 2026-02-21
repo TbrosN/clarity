@@ -1,43 +1,55 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { Platform } from 'react-native';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
   color: string;
 }) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
+  return <FontAwesome size={20} style={{ marginBottom: -2 }} {...props} />;
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
+        tabBarActiveTintColor: '#1F2937',
+        tabBarInactiveTintColor: '#9AA1AD',
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 0.2,
+        },
+        tabBarStyle: {
+          height: 66,
+          paddingTop: 6,
+          paddingBottom: Platform.OS === 'ios' ? 8 : 10,
+          backgroundColor: '#FCFCFD',
+          borderTopColor: '#E7EAF0',
+          borderTopWidth: 1,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 2,
+        },
         headerShown: useClientOnlyValue(false, true),
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Clarity',
-          tabBarIcon: ({ color }) => <TabBarIcon name="sun-o" color={color} />,
-          headerShown: false, // Hide header on Dashboard since we have custom header
+          tabBarIcon: ({ color }: { color: string }) => <TabBarIcon name="home" color={color} />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="modal"
         options={{
-          title: 'History',
-          tabBarIcon: ({ color }) => <TabBarIcon name="history" color={color} />,
+          title: 'Guide',
+          tabBarIcon: ({ color }: { color: string }) => <TabBarIcon name="cog" color={color} />,
+          headerShown: false,
         }}
       />
     </Tabs>

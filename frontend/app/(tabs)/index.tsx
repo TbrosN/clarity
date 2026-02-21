@@ -301,7 +301,7 @@ export default function DashboardScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Top insight</Text>
           {insights.length > 1 && (
-            <Link href="/modal" asChild>
+            <Link href="/history" asChild>
               <TouchableOpacity activeOpacity={0.75}>
                 <Text style={styles.sectionLink}>View all ({insights.length})</Text>
               </TouchableOpacity>
