@@ -241,19 +241,6 @@ export default function DebugScreen() {
             <Text className="text-2xl text-white">→</Text>
           </View>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          className="bg-[#2C3E50] p-5 rounded-3xl shadow-sm"
-          onPress={() => router.push('/(tabs)/two')}
-        >
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-white font-bold text-lg">View History</Text>
-              <Text className="text-white/80 text-sm">Check logged data</Text>
-            </View>
-            <Text className="text-2xl text-white">→</Text>
-          </View>
-        </TouchableOpacity>
       </View>
 
       {/* Warning */}
