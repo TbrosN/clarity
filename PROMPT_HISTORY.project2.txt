@@ -14,3 +14,9 @@ hmm, when I run this it looks like we are just going to the deterministic fallba
 
 @backend/services/insight_llm.py:96 our llm outputs citations for their claims. Let's make our frontend display these nicely so a user can easily see what was cited in a tooltip. For instance, here's a tip in our currnet UI:
 `Sleep quality and morning energy shows a better pattern over the last 7 days: Sleep quality and morning energy: 4.50 vs 1.00 (+3.50) over 7 days [[cite:fact_sleep_quality_energy_7d_delta]] (4.5 vs 1.0) [[cite:fact_sleep_quality_energy_7d_mean_good]] [[cite:fact_sleep_quality_energy_7d_mean_poor]].`
+
+@frontend/app/baselines.tsx when showing the baselines in the UI, let's use graphs and visuals instead of just numbers. This will allow us to compact the UI, showing more baselines on the screen and making them easier to parse and intuit
+
+no I want to use bar graphs or other very intuitive and clear graphs of the data. Feel free to research any useful libraries rather than implementing these from scratch
+
+@frontend/app/(tabs)/index.tsx let's redesign our home screen into a beautiful dashboard where users see graphs of their data, leading insights, and can click the survey buttons. Make the UX streamlined and clean.
