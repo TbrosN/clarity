@@ -353,14 +353,6 @@ export default function DashboardScreen() {
               <Text style={styles.statusPillText}>{surveysCompleted}/2 done</Text>
             </View>
           </View>
-          <View style={styles.progressRow}>
-            <Text style={styles.progressLabel}>
-              {surveysCompleted === 2 ? 'All surveys completed today' : 'Complete both check-ins for your daily baseline'}
-            </Text>
-            <Text style={styles.progressMeta}>
-              {todayLog ? 'Log started' : 'No entries yet'}
-            </Text>
-          </View>
         </LinearGradient>
 
         {isDesktop ? (

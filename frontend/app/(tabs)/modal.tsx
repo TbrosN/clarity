@@ -98,9 +98,6 @@ export default function ModalScreen() {
           </View>
         </View>
 
-        <Pressable style={styles.doneButton} onPress={() => router.back()}>
-          <Text style={styles.doneButtonText}>Done</Text>
-        </Pressable>
       </View>
 
       <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'auto'} />
@@ -256,18 +253,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontStyle: 'italic',
-  },
-  doneButton: {
-    marginTop: 4,
-    backgroundColor: '#1F2937',
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  doneButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
+  }
 });
