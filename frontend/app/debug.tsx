@@ -9,10 +9,10 @@ export default function DebugScreen() {
   const [summary, setSummary] = useState<any>(null);
   const [lastAction, setLastAction] = useState<string | null>(null);
 
-  // Disable access to debug page - redirect to home
-  useEffect(() => {
-    router.replace('/(tabs)');
-  }, []);
+  // // Disable access to debug page - redirect to home
+  // useEffect(() => {
+  //   router.replace('/(tabs)');
+  // }, []);
 
   const generateSampleData = async (days: number) => {
     setLoading(true);
@@ -172,13 +172,13 @@ export default function DebugScreen() {
       {summary && (
         <View className="mb-6">
           <Text className="text-gray-800 font-bold text-xl mb-4">Data Summary</Text>
-          
+
           <View className="bg-white p-5 rounded-3xl shadow-sm mb-3">
             <View className="flex-row items-center justify-between mb-4">
               <Text className="text-gray-600 text-lg">Total Days Tracked</Text>
               <Text className="text-3xl font-bold text-[#2C3E50]">{summary.total_days}</Text>
             </View>
-            
+
             <View className={`p-3 rounded-2xl ${summary.ready_for_baselines ? 'bg-green-50' : 'bg-yellow-50'}`}>
               <Text className="text-center font-medium text-lg">{summary.message}</Text>
             </View>
@@ -237,19 +237,6 @@ export default function DebugScreen() {
             <View>
               <Text className="text-white font-bold text-lg">View Dashboard</Text>
               <Text className="text-white/80 text-sm">See insights integration</Text>
-            </View>
-            <Text className="text-2xl text-white">→</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="bg-[#2C3E50] p-5 rounded-3xl shadow-sm"
-          onPress={() => router.push('/(tabs)/two')}
-        >
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-white font-bold text-lg">View History</Text>
-              <Text className="text-white/80 text-sm">Check logged data</Text>
             </View>
             <Text className="text-2xl text-white">→</Text>
           </View>

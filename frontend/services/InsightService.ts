@@ -5,6 +5,23 @@ export type Insight = {
   message: string;
   confidence?: 'low' | 'medium' | 'high';
   impact?: 'positive' | 'negative';
+  action?: string | null;
+  citations?: InsightCitation[];
+  source_metric_keys?: string[];
+};
+
+export type InsightCitation = {
+  fact_id: string;
+  label: string;
+  value: number | string;
+  unit?: string | null;
+  window_days: number;
+  sample_size?: number | null;
+  n_good?: number | null;
+  n_poor?: number | null;
+  method: string;
+  provenance: string;
+  source_metric_keys: string[];
 };
 
 const isInsight = (value: unknown): value is Insight => {

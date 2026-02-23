@@ -1,13 +1,25 @@
 import { generateInsights, Insight } from '@/services/InsightService';
+import InsightMessageWithCitations from '@/components/InsightMessageWithCitations';
 import { fetchPersonalBaselines, PersonalBaselinesResponse, getMetricIcon, getMetricLabel } from '@/services/BaselineService';
-import { DailyLog, getDailyLog } from '@/services/StorageService';
+import { DailyLog, getDailyLog, getRecentLogs } from '@/services/StorageService';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const [todayLog, setTodayLog] = useState<DailyLog | null>(null);
+  const [recentLogs, setRecentLogs] = useState<DailyLog[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [baselines, setBaselines] = useState<PersonalBaselinesResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -16,46 +28,37 @@ export default function DashboardScreen() {
 
   const today = new Date().toISOString().split('T')[0];
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const formatDate = () =>
+    new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
   const loadData = async () => {
     const log = await getDailyLog(today);
     setTodayLog(log);
 
-    // Check survey completion
-    // Before bed survey is complete if we have: planned sleep time, last meal, screens off, caffeine, and stress
-    const beforeBedFields = [
-      log?.plannedSleepTime,
-      log?.lastMeal,
-      log?.screensOff,
-      log?.caffeine,
-      log?.stress
-    ];
-    setBeforeBedComplete(beforeBedFields.every(field => field !== null && field !== undefined));
+    const beforeBedFields = [log?.plannedSleepTime, log?.lastMeal, log?.screensOff, log?.caffeine, log?.stress];
+    setBeforeBedComplete(beforeBedFields.every(f => f !== null && f !== undefined));
 
-    // After wake survey is complete if we have: actual sleep time, wake time, snooze, sleep quality, energy, sleepiness
-    const afterWakeFields = [
-      log?.actualSleepTime,
-      log?.wakeTime,
-      log?.snooze,
-      log?.sleepQuality,
-      log?.energy,
-      log?.sleepiness
-    ];
-    setAfterWakeComplete(afterWakeFields.every(field => field !== null && field !== undefined));
+    const afterWakeFields = [log?.actualSleepTime, log?.wakeTime, log?.snooze, log?.sleepQuality, log?.energy, log?.sleepiness];
+    setAfterWakeComplete(afterWakeFields.every(f => f !== null && f !== undefined));
 
-    // Insights
     const generated = await generateInsights();
     setInsights(Array.isArray(generated) ? generated : []);
 
-    // Baselines
     const baselinesData = await fetchPersonalBaselines();
     setBaselines(baselinesData);
+
+    const logs = await getRecentLogs(14);
+    setRecentLogs(logs);
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { loadData(); }, []));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -65,300 +68,664 @@ export default function DashboardScreen() {
 
   const getDeviationColor = (deviationPct: number | null, metricType: string): string => {
     if (!deviationPct) return '#9CA3AF';
-    
-    // For stress, positive deviation is bad
-    const isStress = metricType === 'stress';
-    const effectiveDeviation = isStress ? -deviationPct : deviationPct;
-    
-    if (effectiveDeviation >= 10) return '#10B981'; // Green - significantly better
-    if (effectiveDeviation >= 5) return '#34D399'; // Light green - better
-    if (effectiveDeviation <= -10) return '#EF4444'; // Red - significantly worse
-    if (effectiveDeviation <= -5) return '#F87171'; // Light red - worse
-    return '#9CA3AF'; // Gray - neutral
+    const eff = metricType === 'stress' ? -deviationPct : deviationPct;
+    if (eff >= 10) return '#10B981';
+    if (eff >= 5) return '#34D399';
+    if (eff <= -10) return '#EF4444';
+    if (eff <= -5) return '#F87171';
+    return '#9CA3AF';
+  };
+
+  const getMetricValueFromLog = (log: DailyLog, metric: string): number | null => {
+    switch (metric) {
+      case 'sleepQuality': return typeof log.sleepQuality === 'number' ? log.sleepQuality : null;
+      case 'energy':       return typeof log.energy === 'number' ? log.energy : null;
+      case 'stress':       return typeof log.stress === 'number' ? log.stress : null;
+      case 'sleepiness':   return typeof log.sleepiness === 'number' ? log.sleepiness : null;
+      case 'sleepDuration': {
+        const sleepStr = log.actualSleepTime as string | undefined;
+        const wakeStr  = log.wakeTime as string | undefined;
+        if (!sleepStr || !wakeStr) return null;
+        try {
+          const [sh, sm] = sleepStr.split(':').map(Number);
+          let wakeH: number, wakeM: number;
+          if (wakeStr.includes('T') || wakeStr.includes('Z')) {
+            const d = new Date(wakeStr);
+            wakeH = d.getHours(); wakeM = d.getMinutes();
+          } else {
+            [wakeH, wakeM] = wakeStr.split(':').map(Number);
+          }
+          let dur = (wakeH + wakeM / 60) - (sh + sm / 60);
+          if (dur < 0) dur += 24;
+          return dur > 0 && dur < 16 ? dur : null;
+        } catch { return null; }
+      }
+      default: return null;
+    }
+  };
+
+  const surveysCompleted = [beforeBedComplete, afterWakeComplete].filter(Boolean).length;
+  const topInsight = insights.find(i => i.confidence === 'high') || insights[0];
+  const isTablet = width >= 768;
+  const isDesktop = width >= 1080;
+  const maxContentWidth = isDesktop ? 1120 : isTablet ? 920 : 720;
+  const metricColumns = isDesktop ? 3 : 2;
+  const surveyCardDirection = isTablet ? 'row' : 'column';
+
+  const getInsightStyle = (insight: Insight) => {
+    if (insight.impact === 'positive') return {
+      bg: '#EEF9F4', border: '#CAECDC', icon: '✨',
+      badgeBg: '#D8F3E6', badgeText: '#25634A', numColor: '#2E8B67',
+    };
+    if (insight.impact === 'negative') return {
+      bg: '#FEF4F4', border: '#F6D3D3', icon: '⚠️',
+      badgeBg: '#F9DFDF', badgeText: '#8F3A3A', numColor: '#C25252',
+    };
+    if (insight.type === 'streak') return {
+      bg: '#FFF8EF', border: '#F4DFC4', icon: '🔥',
+      badgeBg: '#F5E4CE', badgeText: '#8B5A27', numColor: '#B5762D',
+    };
+    return {
+      bg: '#EFF3FF', border: '#D5DFFB', icon: '💡',
+      badgeBg: '#DCE4FC', badgeText: '#3B4A87', numColor: '#5163A8',
+    };
+  };
+
+  const renderMetricsSection = () => {
+    if (!baselines) return null;
+
+    const metrics = baselines.baselines;
+    const rows: (typeof baselines.baselines)[] = [];
+    for (let i = 0; i < metrics.length; i += metricColumns) rows.push(metrics.slice(i, i + metricColumns));
+
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Health snapshot</Text>
+          <Text style={styles.sectionMeta}>Last 7 days</Text>
+        </View>
+        <View style={styles.metricGrid}>
+          {rows.map((row, rowIdx) => (
+            <View key={rowIdx} style={styles.kpiRow}>
+              {row.map((baseline) => {
+                const devColor = getDeviationColor(baseline.deviation_percentage, baseline.metric);
+                const displayVal = baseline.current_value ?? baseline.baseline;
+                const isStressMetric = baseline.metric === 'stress';
+
+                const last7 = recentLogs.slice(-7);
+                const sparkVals = last7.map(log => getMetricValueFromLog(log, baseline.metric));
+                const validVals = sparkVals.filter(v => v !== null) as number[];
+                const dataMax = validVals.length > 0
+                  ? Math.max(...validVals, baseline.baseline) * 1.02
+                  : baseline.baseline * 1.2;
+                const dataMin = validVals.length > 0
+                  ? Math.min(...validVals, baseline.baseline) * 0.88
+                  : baseline.baseline * 0.75;
+                const range = Math.max(dataMax - dataMin, 0.01);
+                const baselinePct = Math.round(((baseline.baseline - dataMin) / range) * 100);
+
+                const sparkBarColor = (val: number) =>
+                  (isStressMetric ? val <= baseline.baseline : val >= baseline.baseline)
+                    ? '#2E8B67'
+                    : '#CD6C6C';
+
+                const devPct = baseline.deviation_percentage;
+                const trendText = devPct === null
+                  ? null
+                  : Math.abs(devPct) < 2
+                    ? 'On track'
+                    : `${devPct > 0 ? 'Up' : 'Down'} ${Math.abs(devPct).toFixed(0)}%`;
+
+                return (
+                  <View key={baseline.metric} style={styles.kpiCard}>
+                    <View style={styles.kpiHeader}>
+                      <View style={[styles.kpiAccent, { backgroundColor: `${devColor}24` }]}>
+                        <Text style={styles.kpiEmoji}>{getMetricIcon(baseline.metric)}</Text>
+                      </View>
+                      <Text style={styles.kpiName} numberOfLines={1}>
+                        {getMetricLabel(baseline.metric)}
+                      </Text>
+                    </View>
+
+                    <Text style={styles.kpiValue}>{displayVal.toFixed(1)}</Text>
+                    <Text style={styles.kpiUnit}>{baseline.unit}</Text>
+
+                    <View style={styles.kpiSparkRow}>
+                      <View style={styles.kpiYAxis}>
+                        <Text style={styles.kpiYLabel}>{dataMax.toFixed(1)}</Text>
+                        <Text style={styles.kpiYLabel}>{dataMin.toFixed(1)}</Text>
+                      </View>
+                      <View style={styles.kpiChartArea}>
+                        <View style={[styles.kpiBaseline, { bottom: `${baselinePct}%` }]} />
+                        <View style={styles.kpiBars}>
+                          {sparkVals.map((val, idx) => {
+                            if (val === null) {
+                              return (
+                                <View key={idx} style={styles.kpiBarSlot}>
+                                  <View style={styles.kpiBarEmpty} />
+                                </View>
+                              );
+                            }
+                            const hp = Math.max(((val - dataMin) / range) * 100, 4);
+                            return (
+                              <View key={idx} style={styles.kpiBarSlot}>
+                                <View
+                                  style={[
+                                    styles.kpiBar,
+                                    { height: `${Math.min(hp, 100)}%`, backgroundColor: sparkBarColor(val) },
+                                  ]}
+                                />
+                              </View>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    </View>
+
+                    {trendText && (
+                      <View style={[styles.kpiTrend, { backgroundColor: `${devColor}16` }]}>
+                        <Text style={[styles.kpiTrendText, { color: devColor }]}>
+                          {trendText} vs baseline
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+              {row.length < metricColumns &&
+                Array.from({ length: metricColumns - row.length }).map((_, idx) => (
+                  <View key={`spacer-${idx}`} style={styles.kpiCardSpacer} />
+                ))}
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  const renderSurveySection = () => (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Log today</Text>
+        <Text style={styles.sectionMeta}>Two quick check-ins</Text>
+      </View>
+      <View style={[styles.sectionRow, { flexDirection: surveyCardDirection }]}>
+        <TouchableOpacity
+          style={styles.surveyCard}
+          activeOpacity={0.86}
+          onPress={() => router.push('/survey?type=beforeBed')}
+        >
+          <LinearGradient
+            colors={beforeBedComplete ? ['#304E43', '#223C35'] : ['#20242C', '#171A21']}
+            style={styles.surveyCardInner}
+          >
+            <Text style={styles.surveyEmoji}>Moon</Text>
+            <Text style={styles.surveyTitle}>Before Bed</Text>
+            <Text style={[styles.surveySubtitle, { color: beforeBedComplete ? '#B7E6D4' : '#AAB0BB' }]}>
+              {beforeBedComplete ? 'Completed' : '5 questions'}
+            </Text>
+            <View style={[styles.surveyBtn, { backgroundColor: beforeBedComplete ? '#4E8B73' : '#343944' }]}>
+              <Text style={styles.surveyBtnText}>{beforeBedComplete ? 'Edit' : 'Start'}</Text>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.surveyCard}
+          activeOpacity={0.86}
+          onPress={() => router.push('/survey?type=afterWake')}
+        >
+          <LinearGradient
+            colors={afterWakeComplete ? ['#4A6B5D', '#365347'] : ['#6A5039', '#573E2A']}
+            style={styles.surveyCardInner}
+          >
+            <Text style={styles.surveyEmoji}>Sun</Text>
+            <Text style={styles.surveyTitle}>After Wake</Text>
+            <Text style={[styles.surveySubtitle, { color: afterWakeComplete ? '#CBE8DA' : '#F1D6B6' }]}>
+              {afterWakeComplete ? 'Completed' : '6 questions'}
+            </Text>
+            <View style={[styles.surveyBtn, { backgroundColor: afterWakeComplete ? '#5D967E' : '#8D6440' }]}>
+              <Text style={styles.surveyBtnText}>{afterWakeComplete ? 'Edit' : 'Start'}</Text>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderInsightSection = () => {
+    if (!topInsight) return null;
+    const s = getInsightStyle(topInsight);
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Top insight</Text>
+          {insights.length > 1 && (
+            <Link href="/history" asChild>
+              <TouchableOpacity activeOpacity={0.75}>
+                <Text style={styles.sectionLink}>View all ({insights.length})</Text>
+              </TouchableOpacity>
+            </Link>
+          )}
+        </View>
+        <View style={[styles.insightCard, { backgroundColor: s.bg, borderColor: s.border }]}>
+          <View style={styles.insightCardHeader}>
+            <Text style={styles.insightIcon}>{s.icon}</Text>
+            <View style={[styles.badge, { backgroundColor: s.badgeBg }]}>
+              <Text style={[styles.badgeText, { color: s.badgeText }]}>
+                {topInsight.confidence ?? 'personalized'}
+              </Text>
+            </View>
+          </View>
+          <InsightMessageWithCitations
+            message={topInsight.message}
+            citations={topInsight.citations}
+            numberColor={s.numColor}
+          />
+        </View>
+      </View>
+    );
   };
 
   return (
     <ScrollView
-      className="flex-1 bg-[#F7F7F7]"
-      contentContainerStyle={{ padding: 20, paddingTop: 60 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      style={styles.screen}
+      contentContainerStyle={styles.screenContent}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#8F949D" />}
     >
-      {/* Header */}
-      <View className="mb-8">
-        <View className="flex-row justify-between items-start">
-          <View className="flex-1">
-            <Text className="text-gray-500 text-lg font-medium">Today's Focus</Text>
-            <Text className="text-4xl font-bold text-[#2C3E50]">Clarity</Text>
+      <View style={[styles.page, { maxWidth: maxContentWidth }]}>
+        <LinearGradient colors={['#FFFFFF', '#F8F9FC']} style={styles.headerCard}>
+          <View style={styles.headerTopRow}>
+            <View>
+              <Text style={styles.greeting}>{getGreeting()}</Text>
+              <Text style={styles.appTitle}>Clarity</Text>
+              <Text style={styles.dateLabel}>{formatDate()}</Text>
+            </View>
+            <View style={styles.statusPill}>
+              <View style={styles.dotRow}>
+                {[0, 1].map(i => (
+                  <View
+                    key={i}
+                    style={[styles.dot, { backgroundColor: i < surveysCompleted ? '#2E8B67' : '#CFD3DA' }]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.statusPillText}>{surveysCompleted}/2 done</Text>
+            </View>
           </View>
-          <View className="flex-row gap-2">
-            <Link href="/modal" asChild>
-              <TouchableOpacity className="bg-gray-100 w-10 h-10 rounded-full items-center justify-center">
-                <Text className="text-lg">💡</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-        </View>
+        </LinearGradient>
 
-        {/* Quick Stats */}
-        <View className="mt-4 flex-row items-center">
-          <Text className="text-gray-500 text-sm">
-            {[beforeBedComplete, afterWakeComplete].filter(Boolean).length} of 2 surveys completed today ✓
-          </Text>
-        </View>
+        {isDesktop ? (
+          <View style={styles.desktopGrid}>
+            <View style={styles.desktopMainColumn}>{renderMetricsSection()}</View>
+            <View style={styles.desktopSideColumn}>
+              {renderSurveySection()}
+              {renderInsightSection()}
+            </View>
+          </View>
+        ) : (
+          <View style={styles.body}>
+            {renderMetricsSection()}
+            {renderSurveySection()}
+            {renderInsightSection()}
+          </View>
+        )}
       </View>
-
-      {/* Personal Baselines Section */}
-      {baselines && baselines.tracking_days >= 5 && baselines.baselines.length > 0 ? (
-        <View className="mb-6">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-gray-800 font-bold text-xl">Your Baselines</Text>
-            <Link href="/baselines" asChild>
-              <TouchableOpacity>
-                <Text className="text-[#2C3E50] font-medium text-sm">View All →</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-
-          {/* Show top 3 baselines */}
-          {baselines.baselines.slice(0, 3).map((baseline) => {
-            const deviationColor = getDeviationColor(baseline.deviation_percentage, baseline.metric);
-            const hasDeviation = baseline.deviation !== null && baseline.current_value !== null;
-            
-            return (
-              <View key={baseline.metric} className="bg-white p-5 rounded-3xl shadow-sm mb-3 border border-gray-100">
-                <View className="flex-row items-center justify-between mb-3">
-                  <View className="flex-row items-center flex-1">
-                    <Text className="text-3xl mr-3">{getMetricIcon(baseline.metric)}</Text>
-                    <View className="flex-1">
-                      <Text className="text-gray-800 font-bold text-base">{getMetricLabel(baseline.metric)}</Text>
-                      {baseline.interpretation && (
-                        <Text className="text-gray-500 text-xs mt-1">{baseline.interpretation}</Text>
-                      )}
-                    </View>
-                  </View>
-                  {hasDeviation && (
-                    <View>
-                      <Text className="text-right text-xs text-gray-400 mb-1">vs baseline</Text>
-                      <Text className="text-right font-bold text-lg" style={{ color: deviationColor }}>
-                        {baseline.deviation > 0 ? '+' : ''}{baseline.deviation?.toFixed(1)}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <View className="flex-row items-center justify-between">
-                  <View>
-                    <Text className="text-gray-400 text-xs">Baseline</Text>
-                    <Text className="text-gray-800 font-semibold text-lg">
-                      {baseline.baseline} <Text className="text-xs text-gray-500">{baseline.unit}</Text>
-                    </Text>
-                  </View>
-                  {baseline.current_value !== null && (
-                    <View>
-                      <Text className="text-gray-400 text-xs text-right">Recent (7d)</Text>
-                      <Text className="font-semibold text-lg text-right" style={{ color: deviationColor }}>
-                        {baseline.current_value} <Text className="text-xs text-gray-500">{baseline.unit}</Text>
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            );
-          })}
-
-          {/* View All Button */}
-          <Link href="/baselines" asChild>
-            <TouchableOpacity className="bg-[#2C3E50] p-4 rounded-2xl items-center">
-              <Text className="text-white font-bold">View All Baselines & Behavior Impacts</Text>
-            </TouchableOpacity>
-          </Link>
-        </View>
-      ) : baselines && baselines.tracking_days > 0 && baselines.tracking_days < 5 ? (
-        <View className="mb-6">
-          <Text className="text-gray-800 font-bold text-xl mb-4">Your Baselines</Text>
-          <View className="bg-yellow-50 p-5 rounded-3xl border border-yellow-200">
-            <View className="flex-row items-center mb-2">
-              <Text className="text-3xl mr-3">📊</Text>
-              <Text className="text-gray-800 font-bold text-lg">Almost there!</Text>
-            </View>
-            <Text className="text-gray-600 mb-3">
-              You've tracked {baselines.tracking_days} days. Complete {5 - baselines.tracking_days} more days to unlock your personalized baselines.
-            </Text>
-            <View className="bg-yellow-100 h-2 rounded-full overflow-hidden">
-              <View
-                className="h-full bg-yellow-500 rounded-full"
-                style={{ width: `${(baselines.tracking_days / 5) * 100}%` }}
-              />
-            </View>
-          </View>
-        </View>
-      ) : null}
-
-      {/* Daily Surveys */}
-      <View className="mb-6">
-        <Text className="text-gray-800 font-bold text-xl mb-4">Daily Surveys</Text>
-
-        {/* Before Bed Survey */}
-        <TouchableOpacity
-          className="bg-white p-6 rounded-3xl shadow-sm mb-4 border border-gray-100"
-          onPress={() => router.push('/survey?type=beforeBed')}
-        >
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1">
-              <View className="flex-row items-center mb-2">
-                <Text className="text-3xl mr-3">🌙</Text>
-                <Text className="text-gray-800 font-bold text-lg">Before Bed</Text>
-              </View>
-              <Text className="text-gray-500 text-sm mb-1">5 quick questions about your evening</Text>
-              <Text className="text-gray-400 text-xs">Sleep time · Meals · Screens · Caffeine · Stress</Text>
-            </View>
-            <View className={`w-12 h-12 rounded-full items-center justify-center ${beforeBedComplete ? 'bg-green-100' : 'bg-gray-50'}`}>
-              <Text className="text-xl">{beforeBedComplete ? '✓' : '→'}</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        {/* After Wake Survey */}
-        <TouchableOpacity
-          className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100"
-          onPress={() => router.push('/survey?type=afterWake')}
-        >
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1">
-              <View className="flex-row items-center mb-2">
-                <Text className="text-3xl mr-3">☀️</Text>
-                <Text className="text-gray-800 font-bold text-lg">After Wake-Up</Text>
-              </View>
-              <Text className="text-gray-500 text-sm mb-1">6 questions about your sleep & morning</Text>
-              <Text className="text-gray-400 text-xs">Sleep time · Wake time · Sleep quality · Energy</Text>
-            </View>
-            <View className={`w-12 h-12 rounded-full items-center justify-center ${afterWakeComplete ? 'bg-green-100' : 'bg-gray-50'}`}>
-              <Text className="text-xl">{afterWakeComplete ? '✓' : '→'}</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* Insights */}
-      {insights.length > 0 && (
-        <View className="mb-6">
-          <View className="flex-row items-center mb-4">
-            <Text className="text-gray-800 font-bold text-xl flex-1">Insights</Text>
-            <Text className="text-xs text-gray-400 uppercase tracking-wider">
-              {insights.filter(i => i.confidence === 'high').length > 0 ? 'HIGH CONFIDENCE' : 'PERSONALIZED'}
-            </Text>
-          </View>
-          {insights.map((insight, index) => {
-            const getInsightIcon = (type: string, impact?: string) => {
-              if (type === 'pattern' && impact === 'negative') return '⚠️';
-              if (type === 'pattern' && impact === 'positive') return '✨';
-              if (type === 'streak') return '🔥';
-              return '💡';
-            };
-
-            const getInsightColor = (impact?: string, confidence?: string) => {
-              if (impact === 'negative') return {
-                bg: 'bg-red-50',
-                border: 'border-red-200',
-                badge: 'bg-red-100',
-                badgeText: 'text-red-700',
-                numberColor: '#DC2626',
-              };
-              if (impact === 'positive') return {
-                bg: 'bg-green-50',
-                border: 'border-green-200',
-                badge: 'bg-green-100',
-                badgeText: 'text-green-700',
-                numberColor: '#059669',
-              };
-              return {
-                bg: 'bg-blue-50',
-                border: 'border-blue-200',
-                badge: 'bg-blue-100',
-                badgeText: 'text-blue-700',
-                numberColor: '#2563EB',
-              };
-            };
-
-            // Function to parse and format the message with highlighted numbers
-            const formatMessage = (message: string, numberColor: string) => {
-              // Split message by numbers and units (e.g., "3.5/5", "7+ hours", "50%")
-              const parts: Array<{ text: string; isNumber: boolean }> = [];
-              const regex = /(\d+\.?\d*\s*[+]?\s*(?:\/\d+|hours?|h|%|out of \d+)?)/g;
-              let lastIndex = 0;
-              let match;
-
-              while ((match = regex.exec(message)) !== null) {
-                // Add text before the number
-                if (match.index > lastIndex) {
-                  parts.push({ text: message.slice(lastIndex, match.index), isNumber: false });
-                }
-                // Add the number
-                parts.push({ text: match[0], isNumber: true });
-                lastIndex = match.index + match[0].length;
-              }
-              
-              // Add remaining text
-              if (lastIndex < message.length) {
-                parts.push({ text: message.slice(lastIndex), isNumber: false });
-              }
-
-              return (
-                <Text className="text-gray-800 text-base leading-6">
-                  {parts.map((part, idx) => 
-                    part.isNumber ? (
-                      <Text key={idx} className="font-bold text-lg" style={{ color: numberColor }}>
-                        {part.text}
-                      </Text>
-                    ) : (
-                      <Text key={idx}>{part.text}</Text>
-                    )
-                  )}
-                </Text>
-              );
-            };
-
-            const colors = getInsightColor(insight.impact, insight.confidence);
-            const insightIcon = getInsightIcon(insight.type, insight.impact);
-
-            return (
-              <View key={index} className={`${colors.bg} p-5 rounded-3xl mb-3 ${colors.border} border shadow-sm`}>
-                <View className="flex-row items-center justify-between mb-3">
-                  <View className="flex-row items-center flex-1">
-                    <Text className="text-3xl mr-3">{insightIcon}</Text>
-                    <View className="flex-1">
-                      <Text className="text-gray-800 font-bold text-base mb-1">
-                        {insight.type === 'pattern' ? 'Pattern Detected' : 
-                         insight.type === 'streak' ? 'Streak' : 'Tip'}
-                      </Text>
-                      <Text className="text-gray-500 text-xs">
-                        {insight.confidence ? `${insight.confidence} confidence` : 'Based on your data'}
-                      </Text>
-                    </View>
-                  </View>
-                  {insight.confidence && (
-                    <View className={`px-3 py-1 rounded-full ${colors.badge}`}>
-                      <Text className={`text-xs font-medium ${colors.badgeText}`}>
-                        {insight.confidence}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                
-                {formatMessage(insight.message, colors.numberColor)}
-              </View>
-            );
-          })}
-        </View>
-      )}
-
-      {/* History Link */}
-      <Link href="/(tabs)/two" asChild>
-        <TouchableOpacity className="mt-4 items-center">
-          <Text className="text-brand-dark font-medium opacity-50">View History</Text>
-        </TouchableOpacity>
-      </Link>
-
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+  },
+  screenContent: {
+    paddingBottom: 56,
+    paddingHorizontal: 14,
+    paddingTop: 18,
+    alignItems: 'center',
+  },
+  page: {
+    width: '100%',
+  },
+
+  // Header
+  headerCard: {
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: '#E4E7EC',
+    paddingHorizontal: 24,
+    paddingVertical: 22,
+    shadowColor: '#0A0A0A',
+    shadowOpacity: 0.06,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
+    marginBottom: 20,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 14,
+  },
+  greeting: {
+    color: '#70757F',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+    letterSpacing: 0.2,
+  },
+  appTitle: {
+    color: '#121418',
+    fontSize: 36,
+    fontWeight: '800',
+    marginBottom: 4,
+    letterSpacing: -1.1,
+  },
+  dateLabel: {
+    color: '#8A909A',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  statusPill: {
+    borderRadius: 999,
+    backgroundColor: '#F0F2F5',
+    borderWidth: 1,
+    borderColor: '#E3E6EB',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    alignItems: 'center',
+    gap: 7,
+  },
+  statusPillText: {
+    color: '#59606C',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  progressRow: {
+    marginTop: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8EAEE',
+    backgroundColor: '#FBFBFC',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  progressLabel: {
+    color: '#4C525D',
+    fontSize: 13,
+    flex: 1,
+    fontWeight: '500',
+  },
+  progressMeta: {
+    color: '#7D838F',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  dotRow: {
+    flexDirection: 'row',
+    gap: 5,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+
+  // Body + desktop layout
+  body: {
+    gap: 18,
+  },
+  desktopGrid: {
+    flexDirection: 'row',
+    gap: 18,
+    alignItems: 'flex-start',
+  },
+  desktopMainColumn: {
+    flex: 1.45,
+  },
+  desktopSideColumn: {
+    flex: 1,
+    gap: 18,
+  },
+
+  // Sections
+  section: {
+    marginBottom: 2,
+  },
+  sectionRow: {
+    gap: 12,
+    marginTop: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    color: '#17191E',
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  sectionMeta: {
+    color: '#8A909B',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sectionLink: {
+    color: '#4C649A',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  metricGrid: {
+    gap: 12,
+  },
+
+  // Survey cards
+  surveyCard: {
+    flex: 1,
+    borderRadius: 24,
+    overflow: 'hidden',
+    minHeight: 176,
+    shadowColor: '#111111',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  surveyCardInner: {
+    flex: 1,
+    padding: 18,
+    justifyContent: 'space-between',
+  },
+  surveyEmoji: {
+    color: '#F2F3F6',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    marginBottom: 10,
+  },
+  surveyTitle: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 18,
+    marginBottom: 4,
+    letterSpacing: -0.2,
+  },
+  surveySubtitle: {
+    fontSize: 13,
+    marginBottom: 14,
+    fontWeight: '500',
+  },
+  surveyBtn: {
+    borderRadius: 999,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    alignSelf: 'flex-start',
+  },
+  surveyBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+
+  // Insight card
+  insightCard: {
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+  },
+  insightCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  insightIcon: {
+    fontSize: 20,
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+
+  // KPI grid
+  kpiRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  kpiCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E7EAF0',
+    shadowColor: '#0E0E0E',
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  kpiCardSpacer: {
+    flex: 1,
+  },
+  kpiHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  kpiAccent: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kpiEmoji: {
+    fontSize: 13,
+  },
+  kpiName: {
+    color: '#69707C',
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+    letterSpacing: 0.1,
+  },
+  kpiValue: {
+    color: '#15181E',
+    fontSize: 29,
+    fontWeight: '800',
+    lineHeight: 34,
+    letterSpacing: -0.8,
+    marginBottom: 2,
+  },
+  kpiUnit: {
+    color: '#8A919D',
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  kpiSparkRow: {
+    flexDirection: 'row',
+    height: 50,
+    marginBottom: 10,
+  },
+  kpiYAxis: {
+    width: 24,
+    height: '100%',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginRight: 5,
+    paddingVertical: 1,
+  },
+  kpiYLabel: {
+    color: '#D0D4DC',
+    fontSize: 8,
+    fontWeight: '500',
+    lineHeight: 10,
+  },
+  kpiChartArea: {
+    flex: 1,
+    height: '100%',
+    position: 'relative',
+  },
+  kpiBaseline: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: '#E8EBF1',
+  },
+  kpiBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: '100%',
+    gap: 3,
+  },
+  kpiBarSlot: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+  kpiBar: {
+    width: '100%',
+    borderRadius: 3,
+  },
+  kpiBarEmpty: {
+    width: '100%',
+    height: 3,
+    backgroundColor: '#F0F2F6',
+    borderRadius: 3,
+  },
+  kpiTrend: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+  kpiTrendText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+});

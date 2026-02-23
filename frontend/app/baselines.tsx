@@ -10,6 +10,7 @@ import {
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { BarChart } from 'react-native-gifted-charts';
 
 export default function BaselinesScreen() {
   const [data, setData] = useState<PersonalBaselinesResponse | null>(null);
@@ -56,61 +57,79 @@ export default function BaselinesScreen() {
   const renderBaselineCard = (baseline: BaselineMetric) => {
     const deviationColor = getDeviationColor(baseline.deviation_percentage, baseline.metric);
     const hasDeviation = baseline.deviation !== null && baseline.deviation_percentage !== null;
+    const recentValue = baseline.current_value;
+    const chartData = [
+      { value: baseline.baseline, label: 'Baseline', frontColor: '#64748B' },
+      ...(recentValue !== null ? [{ value: recentValue, label: 'Recent', frontColor: deviationColor }] : []),
+    ];
+    const maxChartValue = Math.max(baseline.baseline, recentValue ?? 0, 1) * 1.15;
     
     return (
-      <View key={baseline.metric} className="bg-white p-5 rounded-3xl shadow-sm mb-4 border border-gray-100">
-        <View className="flex-row items-center justify-between mb-3">
+      <View
+        key={baseline.metric}
+        className="bg-white p-4 rounded-2xl shadow-sm mb-3 border border-gray-100"
+      >
+        <View className="flex-row items-center justify-between mb-2">
           <View className="flex-row items-center">
-            <Text className="text-3xl mr-2">{getMetricIcon(baseline.metric)}</Text>
+            <Text className="text-2xl mr-2">{getMetricIcon(baseline.metric)}</Text>
             <View>
-              <Text className="text-gray-800 font-bold text-lg">{getMetricLabel(baseline.metric)}</Text>
-              <Text className="text-gray-400 text-xs">Your personal baseline</Text>
+              <Text className="text-gray-800 font-bold text-sm">{getMetricLabel(baseline.metric)}</Text>
+              <Text className="text-gray-400 text-xs">7-day comparison</Text>
             </View>
           </View>
         </View>
 
-        <View className="flex-row items-center justify-between mb-3">
-          <View>
-            <Text className="text-gray-500 text-sm">Baseline Average</Text>
-            <Text className="text-2xl font-bold text-gray-800">
-              {baseline.baseline} <Text className="text-sm text-gray-500">{baseline.unit}</Text>
-            </Text>
-          </View>
-          
-          {baseline.current_value !== null && (
-            <View>
-              <Text className="text-gray-500 text-sm text-right">Recent (7 days)</Text>
-              <Text className="text-2xl font-bold text-right" style={{ color: deviationColor }}>
-                {baseline.current_value} <Text className="text-sm text-gray-500">{baseline.unit}</Text>
+        <View className="bg-gray-50 p-3 rounded-xl mb-3">
+          <BarChart
+            data={chartData}
+            height={120}
+            maxValue={maxChartValue}
+            noOfSections={4}
+            barWidth={30}
+            spacing={30}
+            initialSpacing={12}
+            endSpacing={12}
+            roundedTop
+            disableScroll
+            hideRules
+            hideYAxisText
+            xAxisThickness={0}
+            yAxisThickness={0}
+            xAxisLabelTextStyle={{ color: '#6B7280', fontSize: 11 }}
+          />
+        </View>
+
+        <View className="flex-row items-center justify-between mb-1">
+          <Text className="text-gray-600 text-xs">Baseline</Text>
+          <Text className="text-gray-800 text-sm font-semibold">
+            {baseline.baseline.toFixed(1)} {baseline.unit}
+          </Text>
+        </View>
+
+        <View className="flex-row items-center justify-between">
+          <Text className="text-gray-600 text-xs">Recent (7d)</Text>
+          <Text className="text-sm font-semibold" style={{ color: recentValue !== null ? deviationColor : '#9CA3AF' }}>
+            {recentValue !== null ? `${recentValue.toFixed(1)} ${baseline.unit}` : 'No data'}
+          </Text>
+        </View>
+
+        <View className="flex-row items-center justify-between mt-2">
+          <Text className="text-gray-500 text-[11px]">Delta from baseline</Text>
+          {hasDeviation && (
+            <View className="px-2 py-1 rounded-full" style={{ backgroundColor: `${deviationColor}22` }}>
+              <Text className="font-semibold text-[11px]" style={{ color: deviationColor }}>
+                {(baseline.deviation_percentage || 0) > 0 ? '↑ ' : '↓ '}
+                {Math.abs(baseline.deviation_percentage || 0).toFixed(1)}%
               </Text>
             </View>
           )}
         </View>
 
-        {hasDeviation && (
-          <View className="bg-gray-50 p-3 rounded-2xl">
-            <View className="flex-row items-center justify-between mb-1">
-              <Text className="text-gray-600 text-sm font-medium">Deviation</Text>
-              <Text className="font-bold" style={{ color: deviationColor }}>
-                {baseline.deviation > 0 ? '+' : ''}{baseline.deviation?.toFixed(2)} ({baseline.deviation_percentage > 0 ? '+' : ''}{baseline.deviation_percentage?.toFixed(1)}%)
-              </Text>
-            </View>
-            
-            {/* Progress bar */}
-            <View className="bg-gray-200 h-2 rounded-full overflow-hidden mb-2">
-              <View
-                className="h-full rounded-full"
-                style={{
-                  width: `${Math.min(Math.abs(baseline.deviation_percentage || 0), 100)}%`,
-                  backgroundColor: deviationColor,
-                  marginLeft: (baseline.deviation_percentage || 0) < 0 ? 'auto' : 0,
-                }}
-              />
-            </View>
-            
-            {baseline.interpretation && (
-              <Text className="text-gray-600 text-sm italic">{baseline.interpretation}</Text>
-            )}
+        {baseline.interpretation && (
+          <View className="mt-2">
+            <Text className="text-gray-400 text-[11px]" numberOfLines={2}>
+              {baseline.interpretation}
+            </Text>
           </View>
         )}
       </View>

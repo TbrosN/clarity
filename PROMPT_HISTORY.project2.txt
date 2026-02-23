@@ -1,7 +1,28 @@
-I used Cursor with GPT-5.3-Codex, with a mix of Ask, Planning, and Agent mode.
+I used Cursor with GPT-5.3-Codex and Claude Sonnet 4.6, with a mix of Ask, Planning, and Agent mode.
 
 @backend/routers/logs.py Take a look at this very simple logic we have for calculating insights based on your usage of the app. I want to simplify this significantly, and use an LLM to generate insights based on the data. We should think about balancing the reasoning and writing abilities of LLMs with the accuracy and reliability of deterministic computation. Let's keep this system as simple as possible, yet still effective. If the user logs their sleep habits over many weeks or months, we should still be able to generate insights, but we obviously dont want to pass the entirety of the data over to the llm. Consider that the recent events (of the past week, say) are usually the most pertinent. At a high-level, help me brainstorm and flesh out this plan
 
 for now, I think it makes sense to only ever track the most recent 1-2 weeks max. I agree that llm should not compute stats, we can provide any stats it might need, or even provide tools to compute stats if we want it to have more flexibility (may not be necessary). But I want the llm to be able to generate insights based on the statistics we give it-- we should prompt it to follow Dale carnegie principles to maximize the convincingness of the insights-- never criticize the user, think about what they want and frame it in terms of those wants, make them think it's their idea instead of yours, etc. In particular, we should try not to limit the llm too much too early, and give it a chance to actually reason about the data a bit and generate insights. Of course, we can then validate the insights to the extent possible. for instance, let's not deterministically compute confidence and stuff. Let's plan out all the statistics we want to pass to the llm, all responsibilities of the llm, etc.
 
 for the fact-grounding/validation, perhaps we can implement a citation system, where the llm has some kind of syntax akin to \cite in latex that indicates a citation. For every number, it will write something like \cite{fact_1}, and then in the UI, the user can see where that number came from, and this also might allow us to do more robust validation in our backend.
+
+@backend/services/insight_llm.py let's update this to actually call an llm. I want to use amazon bedrock with haiku 4.5, I have the AWS_BEARER_TOKEN_BEDROCK environment variable already set.
+
+hmm, when I run this it looks like we are just going to the deterministic fallback of `Keep completing your daily surveys to unlock personalized insights. Current completion in the last 14 days is 50%`. Let's first of all be less strict about how many days the user needs before they have insights. A user that has answered the past 7 days should definitenly be seeing some insights.
+
+@backend/routers/logs.py:728-739 let's avoid any deterministic insights like this; we should deterministically calculate a bunch of raw numbers and statistics, but our LLM Service will do all insight generation in our separate pipeline
+
+@backend/services/insight_llm.py:96 our llm outputs citations for their claims. Let's make our frontend display these nicely so a user can easily see what was cited in a tooltip. For instance, here's a tip in our currnet UI:
+`Sleep quality and morning energy shows a better pattern over the last 7 days: Sleep quality and morning energy: 4.50 vs 1.00 (+3.50) over 7 days [[cite:fact_sleep_quality_energy_7d_delta]] (4.5 vs 1.0) [[cite:fact_sleep_quality_energy_7d_mean_good]] [[cite:fact_sleep_quality_energy_7d_mean_poor]].`
+
+@frontend/app/baselines.tsx when showing the baselines in the UI, let's use graphs and visuals instead of just numbers. This will allow us to compact the UI, showing more baselines on the screen and making them easier to parse and intuit
+
+no I want to use bar graphs or other very intuitive and clear graphs of the data. Feel free to research any useful libraries rather than implementing these from scratch
+
+@frontend/app/(tabs)/index.tsx let's redesign our home screen into a beautiful dashboard where users see graphs of their data, leading insights, and can click the survey buttons. Make the UX streamlined and clean.
+
+for the graphs, rather than showing base and now, it would be more useful to just show either how close we are to optimal, or how it has changed over the past [time frame]
+
+awesome, let's just add a more clear scale to the graphs so it's easy to tell what the max value is and what height each bar is at.
+
+@frontend/app/(tabs)/index.tsx let's redesign this to look sleek with this apple-esque design used by a lot of modern startups, e.g. see the attached image. make a plan for this
