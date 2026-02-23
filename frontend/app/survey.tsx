@@ -14,15 +14,19 @@ type SurveyQuestion = {
 
 const SURVEYS = {
   beforeBed: {
-    title: '🌙 Before Bed',
-    subtitle: 'Evening check-in - 5 quick questions',
+    title: '🌙 Start of Evening Wind-down',
+    subtitle: 'Evening check-in - 5 questions',
     questions: [
       {
         id: 'q1',
-        field: 'plannedSleepTime',
-        title: 'When do you plan to try to sleep tonight?',
-        subtitle: 'Your target bedtime',
-        type: 'time',
+        field: 'sleepTime',
+        title: 'When did you start your wind-down before bed?',
+        type: 'enum',
+        options: [
+          { value: '1hr', emoji: '🧘', label: '1 hour+ before bed' },
+          { value: '30mins', emoji: '🧘', label: '30-60 mins before bed' },
+          { value: '<30mins', emoji: '🧘', label: '<30 mins before bed' },
+        ],
       },
       {
         id: 'q2',
@@ -30,11 +34,10 @@ const SURVEYS = {
         title: 'When was your last meal?',
         type: 'enum',
         options: [
-          { value: '3+hours', emoji: '✨', label: '3+ hours ago' },
-          { value: '2-3hours', emoji: '🍽️', label: '2–3 hours ago' },
-          { value: '1-2hours', emoji: '🍕', label: '1–2 hours ago' },
-          { value: '<1hour', emoji: '🥪', label: '<1 hour ago' },
-          { value: 'justAte', emoji: '🍔', label: 'Just ate' },
+          { value: '4', emoji: '✨', label: '4+ hours before bed' },
+          { value: '3', emoji: '🍽️', label: '3-4 hours before bed' },
+          { value: '2', emoji: '🍕', label: '2-3 hours before bed' },
+          { value: '1', emoji: '🥪', label: '<1 hour before bed' },
         ],
       },
       {
@@ -44,11 +47,9 @@ const SURVEYS = {
         subtitle: 'Phone, TV, computer',
         type: 'enum',
         options: [
-          { value: '2+hours', emoji: '✨', label: '2+ hours ago' },
-          { value: '1-2hours', emoji: '📺', label: '1–2 hours ago' },
-          { value: '30-60min', emoji: '📱', label: '30–60 min ago' },
-          { value: '<30min', emoji: '💻', label: '<30 min ago' },
-          { value: 'stillUsing', emoji: '🌙', label: 'Still using / will use in bed' },
+          { value: '60', emoji: '✨', label: '1+ hours before bed' },
+          { value: '30-60', emoji: '📺', label: '30-60 mins before bed' },
+          { value: '<30mins', emoji: '�', label: '<30 mins before bed' },
         ],
       },
       {
@@ -57,26 +58,12 @@ const SURVEYS = {
         title: 'When did you last have caffeine?',
         type: 'enum',
         options: [
-          { value: 'none', emoji: '✨', label: 'None today' },
-          { value: 'before12', emoji: '☕', label: 'Before 12 PM' },
+          { value: 'before12', emoji: '☕', label: 'None or before 12 PM' },
           { value: '12-2pm', emoji: '🕐', label: '12–2 PM' },
           { value: '2-6pm', emoji: '🕔', label: '2–6 PM' },
           { value: 'after6pm', emoji: '🌙', label: 'After 6 PM' },
         ],
-      },
-      {
-        id: 'q5',
-        field: 'stress',
-        title: 'How stressed or mentally alert do you feel right now?',
-        type: 'likert',
-        options: [
-          { value: 1, emoji: '😌', label: 'Very calm' },
-          { value: 2, emoji: '🙂', label: 'Calm' },
-          { value: 3, emoji: '😐', label: 'Neutral' },
-          { value: 4, emoji: '😓', label: 'Stressed' },
-          { value: 5, emoji: '🤯', label: 'Very stressed' },
-        ],
-      },
+      }
     ] as SurveyQuestion[],
   },
   afterWake: {
@@ -85,58 +72,6 @@ const SURVEYS = {
     questions: [
       {
         id: 'q1',
-        field: 'actualSleepTime',
-        title: 'What time did you try to fall asleep last night?',
-        subtitle: 'Actual bedtime',
-        type: 'time',
-      },
-      {
-        id: 'q2',
-        field: 'wakeTime',
-        title: 'What time did you wake up for the day?',
-        subtitle: 'Final wake time',
-        type: 'time',
-      },
-      {
-        id: 'q3',
-        field: 'snooze',
-        title: 'Did you snooze your alarm?',
-        type: 'enum',
-        options: [
-          { value: 'noAlarm', emoji: '✨', label: 'No alarm' },
-          { value: 'no', emoji: '⏰', label: 'No' },
-          { value: '1-2times', emoji: '😴', label: 'Yes (1–2 times)' },
-          { value: '3+times', emoji: '🥱', label: 'Yes (3+ times)' },
-        ],
-      },
-      {
-        id: 'q4',
-        field: 'sleepQuality',
-        title: 'How well did you sleep?',
-        type: 'likert',
-        options: [
-          { value: 1, emoji: '😫', label: 'Very poorly' },
-          { value: 2, emoji: '😴', label: 'Poorly' },
-          { value: 3, emoji: '😐', label: 'Okay' },
-          { value: 4, emoji: '🙂', label: 'Well' },
-          { value: 5, emoji: '✨', label: 'Very well' },
-        ],
-      },
-      {
-        id: 'q5',
-        field: 'energy',
-        title: 'How much energy do you have right now?',
-        type: 'likert',
-        options: [
-          { value: 1, emoji: '🧟', label: 'None' },
-          { value: 2, emoji: '😴', label: 'Low' },
-          { value: 3, emoji: '😐', label: 'Moderate' },
-          { value: 4, emoji: '😊', label: 'High' },
-          { value: 5, emoji: '⚡', label: 'Very high' },
-        ],
-      },
-      {
-        id: 'q6',
         field: 'sleepiness',
         title: 'How sleepy do you feel right now?',
         type: 'likert',
@@ -146,6 +81,18 @@ const SURVEYS = {
           { value: 3, emoji: '😐', label: 'Neutral' },
           { value: 4, emoji: '🙂', label: 'Alert' },
           { value: 5, emoji: '✨', label: 'Very alert' },
+        ],
+      },
+      {
+        id: 'q2',
+        field: 'morningLight',
+        title: 'When did you get sunlight this morning?',
+        subtitle: 'Planned or already completed',
+        type: 'enum',
+        options: [
+          { value: '0-30mins', emoji: '☀️', label: '<30 mins after waking' },
+          { value: '30-60mins', emoji: '☀️', label: '30-60 mins after waking' },
+          { value: 'none', emoji: '☀️', label: 'No natural light' },
         ],
       },
     ] as SurveyQuestion[],
