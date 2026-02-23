@@ -26,3 +26,7 @@ for the graphs, rather than showing base and now, it would be more useful to jus
 awesome, let's just add a more clear scale to the graphs so it's easy to tell what the max value is and what height each bar is at.
 
 @frontend/app/(tabs)/index.tsx let's redesign this to look sleek with this apple-esque design used by a lot of modern startups, e.g. see the attached image. make a plan for this
+
+@frontend/app/survey.tsx:169-197 when we submit the form, let's do it async so the app doesn't stall. I added a "status" column to the responses table in my db, let's update our backend to instantly insert things with status "pending", and then set to success when the db update finishes.
+
+(I realized it doesn't actually make sense to do the thing above since there's no additional processing besides the db insert anway.)
