@@ -30,3 +30,5 @@ awesome, let's just add a more clear scale to the graphs so it's easy to tell wh
 @frontend/app/survey.tsx:169-197 when we submit the form, let's do it async so the app doesn't stall. I added a "status" column to the responses table in my db, let's update our backend to instantly insert things with status "pending", and then set to success when the db update finishes.
 
 (I realized it doesn't actually make sense to do the thing above since there's no additional processing besides the db insert anway.)
+
+(I updated the survey questions by hand because I felt that the questions/options weren't scoped correctly.)
