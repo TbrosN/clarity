@@ -39,6 +39,11 @@ pip install uv
    Then edit `.env` with your actual values:
    - Get Supabase credentials from your Supabase project dashboard
    - Get Clerk keys from your Clerk dashboard
+   - For email reminders with Resend, add:
+     - `RESEND_API_KEY`
+     - `RESEND_FROM_EMAIL` (for example: `Clarity <onboarding@resend.dev>`)
+     - `RESEND_REPLY_TO_EMAIL` (optional)
+     - `FRONTEND_APP_URL` (for example: `https://your-app.example.com`)
 
 3. **Set up Supabase database:**
    

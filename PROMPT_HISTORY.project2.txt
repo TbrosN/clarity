@@ -32,3 +32,13 @@ awesome, let's just add a more clear scale to the graphs so it's easy to tell wh
 (I realized it doesn't actually make sense to do the thing above since there's no additional processing besides the db insert anway.)
 
 (I updated the survey questions by hand because I felt that the questions/options weren't scoped correctly.)
+
+@frontend/services/NotificationService.ts trying to debug our notification scheduling, since it doesnt seem to work. Can you add a simple btn to the UI that when pressed, schedules a notification for 10s in the future?
+
+how does this compare to email notifications? Which would be lower lift for us?
+
+ok lets do emails then. Whats a good provider with a strong free tier here
+
+ok great, let's implement this using resend
+
+it works! Let's clean up the legacy notifications stuff, including service workers, and just use emails for evertything

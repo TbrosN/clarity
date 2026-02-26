@@ -5,18 +5,13 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack, router } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
 import "../global.css";
 
 import { useColorScheme } from "@/components/useColorScheme";
-import * as Notifications from "expo-notifications";
-import {
-  requestPermissions,
-  scheduleDailyPrompts,
-} from "../services/NotificationService";
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { apiService } from "../services/ApiService";
@@ -46,32 +41,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (error) throw error;
   }, [error]);
-
-  useEffect(() => {
-    async function setupNotifications() {
-      const granted = await requestPermissions();
-      if (granted) {
-        await scheduleDailyPrompts();
-      }
-    }
-
-    setupNotifications();
-
-    const responseListener =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        const data = response.notification.request.content.data;
-        const screen = data.screen;
-        const type = data.type;
-
-        if (screen === "survey") {
-          router.push(type ? `/survey?type=${type}` : "/survey");
-        }
-      });
-
-    return () => {
-      responseListener.remove();
-    };
-  }, []);
 
   if (!loaded) {
     return null;

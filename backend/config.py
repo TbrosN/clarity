@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     llm_insights_max_items: int = 4
     insights_window_days: int = Field(default=7, ge=7, le=14)
 
+    # Email reminders (Resend)
+    resend_api_key: str | None = None
+    resend_from_email: str = "Clarity <onboarding@resend.dev>"
+    resend_reply_to_email: str | None = None
+    frontend_app_url: str = "http://localhost:8081"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property
