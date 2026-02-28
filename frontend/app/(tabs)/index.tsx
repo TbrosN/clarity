@@ -375,17 +375,6 @@ export default function DashboardScreen() {
               <Text style={styles.appTitle}>Clarity</Text>
               <Text style={styles.dateLabel}>{formatDate()}</Text>
             </View>
-            <View style={styles.statusPill}>
-              <View style={styles.dotRow}>
-                {[0, 1].map(i => (
-                  <View
-                    key={i}
-                    style={[styles.dot, { backgroundColor: i < surveysCompleted ? '#2E8B67' : '#CFD3DA' }]}
-                  />
-                ))}
-              </View>
-              <Text style={styles.statusPillText}>{surveysCompleted}/2 done</Text>
-            </View>
           </View>
         </LinearGradient>
 
@@ -462,22 +451,6 @@ const styles = StyleSheet.create({
     color: '#8A909A',
     fontSize: 14,
     fontWeight: '500',
-  },
-  statusPill: {
-    borderRadius: 999,
-    backgroundColor: '#F0F2F5',
-    borderWidth: 1,
-    borderColor: '#E3E6EB',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    alignItems: 'center',
-    gap: 7,
-  },
-  statusPillText: {
-    color: '#59606C',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.2,
   },
   progressRow: {
     marginTop: 18,
