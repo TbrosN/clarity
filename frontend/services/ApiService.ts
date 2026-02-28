@@ -75,6 +75,23 @@ class ApiService {
     return this.put('/users/me', data);
   }
 
+  // Email reminder preferences
+  async getEmailReminderPreferences() {
+    return this.get('/preferences/email-reminders');
+  }
+
+  async updateEmailReminderPreferences(data: {
+    timezone?: string;
+    wake?: { target_local_time?: string; enabled?: boolean };
+    wind_down?: { target_local_time?: string; enabled?: boolean };
+  }) {
+    return this.put('/preferences/email-reminders', data);
+  }
+
+  async updateTimezone(timezone: string) {
+    return this.post('/preferences/timezone', { timezone });
+  }
+
   // Health check
   async healthCheck() {
     return this.get('/health');

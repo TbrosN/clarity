@@ -44,6 +44,7 @@ pip install uv
      - `RESEND_FROM_EMAIL` (for example: `Clarity <onboarding@resend.dev>`)
      - `RESEND_REPLY_TO_EMAIL` (optional)
      - `FRONTEND_APP_URL` (for example: `https://your-app.example.com`)
+     - `INTERNAL_CRON_SECRET` (shared secret for protected cron endpoint)
 
 3. **Set up Supabase database:**
    
@@ -92,6 +93,12 @@ pip install uv
    uvicorn main:app --reload --host 0.0.0.0 --port 8000
    ```
 
+5. **Set up email reminder preferences table:**
+   ```sql
+   -- run this script in Supabase SQL editor
+   -- backend/sql/user_email_preferences.sql
+   ```
+
 ## API Documentation
 
 Once the server is running, visit:
@@ -137,6 +144,14 @@ Or use a process manager like Gunicorn:
 ```bash
 gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```
+
+### Render cron for daily reminders
+Create a Render Cron Job that hits your backend every 5 minutes:
+
+- **URL:** `POST https://<your-backend>/internal/reminders/run`
+- **Header:** `X-Cron-Secret: <INTERNAL_CRON_SECRET>`
+
+The backend route performs timezone-aware reminder checks and sends email at user-configured local times.
 
 ## Managing Dependencies with uv
 

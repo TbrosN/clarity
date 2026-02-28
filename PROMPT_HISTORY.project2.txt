@@ -42,3 +42,36 @@ ok lets do emails then. Whats a good provider with a strong free tier here
 ok great, let's implement this using resend
 
 it works! Let's clean up the legacy notifications stuff, including service workers, and just use emails for evertything
+
+now, I want to remove the debug email button and schedule daily reminder emails for the user. what does this entail? I want to ask the user for times they have as target wake up/wind down (which they can also update later) and use those as the email times.
+
+why do we need to store the reminder sends? also, im using vercel to deploy the frontend and render for the backend, how would I set up the cron job? and for timezone, is there a way to just get the user's current timezone and use that (so if they're traveling, it still works)
+
+Let's go with the simpler approach of storing last send for each time preferences. We can have a more general user_email_preferences table that has a user_id, time, and last_sent. Also, looks like resend has an API for scheduling, maybe we can use this and simplify a lot of the work? https://resend.com/blog/introducing-the-schedule-email-api
+
+ok sounds good, let's do the simpler approach, please draft a plan for this
+
+   return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/treybrosnan/Projects/15113/clarity/backend/routers/preferences.py", line 152, in update_timezone
+    _upsert_preference(
+  File "/Users/treybrosnan/Projects/15113/clarity/backend/routers/preferences.py", line 95, in _upsert_preference
+    "updated_at": datetime.now(timezone.utc).isoformat(),
+                               ^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'utc'
+
+@backend/services/reminder_scheduler.py couple of issues: if I turn off 'enable reminders' and save, it doesnt seem to update the db. @frontend/app/(tabs)/modal.tsx:101-123 in fact, the times here also don't apply; when I saved, it created two db rows, but the times werent what I set. Also, we should have ability to enter AM/PM for the times (use a nice time picker that will behave nicely on mobile)
+
+nope, the db isnt getting updated. Also, I want you to make it open the native time picker, not build a custom one like this.
+
+@frontend/app/(tabs)/modal.tsx the time pickers don't work here, nothing happens when I tap them. I want them to open the native time picker on android/ios. (Make sure they still work on desktop though)
+
+still nothing happens when I click it, please research how to properly do a native time picker on mobile
+
+are we doing this? 'To put a native time picker in a PWA, use the HTML5 <input type="time"> element, which automatically triggers the browser's native time picker on both mobile (iOS/Android) and desktop. Ensure the PWA has a manifest.json with display: "standalone" to provide a seamless, native-like experience. '
+
+ok well here's the thing. Even on mobile, when I click the time, it just makes the popup where I type in the time. I want it to open the native time picker, on android its like a clock picker.
+
+@frontend/app/(tabs)/modal.tsx:144 if enabled is false, let's hide the time inputs so it's not confusing
+
+actually, let's not remove but just make them disabled, same with the timezone field.

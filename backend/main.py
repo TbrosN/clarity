@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
-from routers import health, logs
+from routers import health, logs, preferences
 
 app = FastAPI(
     title="Clarity API",
@@ -21,6 +21,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router)
 app.include_router(logs.router)
+app.include_router(preferences.router)
 
 
 if __name__ == "__main__":

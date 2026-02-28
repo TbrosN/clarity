@@ -87,6 +87,14 @@ function RootLayoutNav() {
 
       const token = await getApiAuthToken(getToken);
       apiService.setAuthToken(token);
+      try {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (timezone) {
+          await apiService.updateTimezone(timezone);
+        }
+      } catch (error) {
+        console.warn("Timezone sync failed:", error);
+      }
     };
 
     updateToken();

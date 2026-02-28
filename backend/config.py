@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     resend_from_email: str = "Clarity <onboarding@resend.dev>"
     resend_reply_to_email: str | None = None
     frontend_app_url: str = "http://localhost:8081"
+    internal_cron_secret: str | None = None
+    reminder_send_window_minutes: int = Field(default=5, ge=1, le=30)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

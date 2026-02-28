@@ -47,7 +47,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="modal"
         options={{
-          title: 'Guide',
+          title: 'Settings',
           tabBarIcon: ({ color }: { color: string }) => <TabBarIcon name="cog" color={color} />,
           headerShown: false,
         }}

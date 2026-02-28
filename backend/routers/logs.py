@@ -1,8 +1,7 @@
 from collections import defaultdict
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from config import settings
 from database import supabase
 from middleware.auth import get_current_user_id
@@ -21,16 +20,11 @@ from services.insight_llm import (
     map_to_api_insights,
     validate_llm_response,
 )
-from services.email_service import get_clerk_primary_email, send_resend_email
 from services.insight_stats import build_insight_stats_payload
+from services.reminder_scheduler import run_reminder_scheduler
 
 
 router = APIRouter(tags=["logs"])
-
-
-class DebugReminderEmailRequest(BaseModel):
-    to_email: str | None = None
-    survey_type: str = "beforeBed"
 
 QUESTION_META: dict[str, dict[str, str]] = {
     # Core fields
@@ -1033,61 +1027,20 @@ async def personal_baselines(user_id: str = Depends(get_current_user_id)):
 # ---------------------------------------------------------------------------
 
 
-def _build_email_for_survey_reminder(survey_type: str) -> dict[str, str]:
-    normalized_type = survey_type if survey_type in {"beforeBed", "afterWake"} else "beforeBed"
-    if normalized_type == "afterWake":
-        title = "Quick morning check-in"
-        body = "Take 2 minutes to complete your After Wake survey in Clarity."
-    else:
-        title = "Quick evening check-in"
-        body = "Take 2 minutes to complete your Before Bed survey in Clarity."
-
-    survey_url = f"{settings.frontend_app_url}/survey?type={normalized_type}"
-    subject = f"Clarity reminder: {title}"
-    html = (
-        f"<p>{body}</p>"
-        f'<p><a href="{survey_url}">Open survey</a></p>'
-        "<p>You can ignore this message if you already completed it.</p>"
-    )
-    text = f"{body}\n\nOpen survey: {survey_url}"
-    return {"subject": subject, "html": html, "text": text}
-
-
-@router.post("/debug/send-reminder-email")
-async def debug_send_reminder_email(
-    payload: DebugReminderEmailRequest,
-    user_id: str = Depends(get_current_user_id),
+@router.post("/internal/reminders/run")
+async def run_internal_reminders(
+    x_cron_secret: str | None = Header(default=None, alias="X-Cron-Secret"),
 ):
-    if not settings.resend_api_key:
+    if not settings.internal_cron_secret:
         raise HTTPException(
             status_code=500,
-            detail="Email provider is not configured. Set RESEND_API_KEY.",
+            detail="Cron secret is not configured.",
         )
+    if x_cron_secret != settings.internal_cron_secret:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
-    target_email = payload.to_email
-    if not target_email:
-        target_email = await get_clerk_primary_email(user_id)
-
-    if not target_email:
-        raise HTTPException(
-            status_code=400,
-            detail="No target email found. Provide to_email or ensure your Clerk account has an email.",
-        )
-
-    message = _build_email_for_survey_reminder(payload.survey_type)
-    resend_result = await send_resend_email(
-        to_email=target_email,
-        subject=message["subject"],
-        html=message["html"],
-        text=message["text"],
-    )
-
-    return {
-        "ok": True,
-        "to_email": target_email,
-        "survey_type": payload.survey_type,
-        "resend": resend_result,
-    }
+    summary = await run_reminder_scheduler()
+    return {"ok": True, **summary}
 
 
 @router.post("/debug/generate-sample-data")

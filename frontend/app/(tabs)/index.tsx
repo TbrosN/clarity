@@ -2,11 +2,9 @@ import { generateInsights, Insight } from '@/services/InsightService';
 import InsightMessageWithCitations from '@/components/InsightMessageWithCitations';
 import { fetchPersonalBaselines, PersonalBaselinesResponse, getMetricIcon, getMetricLabel } from '@/services/BaselineService';
 import { DailyLog, getDailyLog, getRecentLogs } from '@/services/StorageService';
-import { apiService } from '@/services/ApiService';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-  Alert,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -66,18 +64,6 @@ export default function DashboardScreen() {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
-  }, []);
-
-  const handleDebugNotification = useCallback(async () => {
-    try {
-      await apiService.post('/debug/send-reminder-email', {
-        survey_type: 'beforeBed',
-      });
-      Alert.alert('Email Sent', 'Reminder email sent.');
-    } catch (error) {
-      console.error('Failed to send debug reminder email:', error);
-      Alert.alert('Error', 'Could not send reminder email.');
-    }
   }, []);
 
   const getDeviationColor = (deviationPct: number | null, metricType: string): string => {
@@ -367,11 +353,6 @@ export default function DashboardScreen() {
               <Text style={styles.statusPillText}>{surveysCompleted}/2 done</Text>
             </View>
           </View>
-          <View style={styles.debugRow}>
-            <TouchableOpacity style={styles.debugButton} activeOpacity={0.8} onPress={handleDebugNotification}>
-              <Text style={styles.debugButtonText}>Debug: send reminder email</Text>
-            </TouchableOpacity>
-          </View>
         </LinearGradient>
 
         {isDesktop ? (
@@ -463,23 +444,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.2,
-  },
-  debugRow: {
-    marginTop: 12,
-    alignItems: 'flex-end',
-  },
-  debugButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#F3C796',
-    backgroundColor: '#FFF7ED',
-  },
-  debugButtonText: {
-    color: '#9A4E10',
-    fontSize: 12,
-    fontWeight: '700',
   },
   progressRow: {
     marginTop: 18,
