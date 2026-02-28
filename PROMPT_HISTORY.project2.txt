@@ -75,3 +75,9 @@ ok well here's the thing. Even on mobile, when I click the time, it just makes t
 @frontend/app/(tabs)/modal.tsx:144 if enabled is false, let's hide the time inputs so it's not confusing
 
 actually, let's not remove but just make them disabled, same with the timezone field.
+
+@/Users/treybrosnan/Projects/15113/clarity/backend/services/reminder_scheduler.py how do I set up the cron jobs for the emailing? im using render as my backend deployment
+
+so should I just set internal cron secret to some uuid? and then how do create the cron job, on the render site?
+
+can we write this cron job in JS? Im creating it in cloudfare instead but just hitting our render backend, and the only file it has is a `worker.js` by default
