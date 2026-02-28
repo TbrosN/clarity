@@ -15,6 +15,15 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+type BaselineHorizonKey = '3d' | '1w' | '1m' | '1y';
+
+const BASELINE_HORIZONS: Array<{ key: BaselineHorizonKey; label: string; days: number; meta: string }> = [
+  { key: '3d', label: '3D', days: 3, meta: 'Past 3 days' },
+  { key: '1w', label: '1W', days: 7, meta: 'Past 1 week' },
+  { key: '1m', label: '1M', days: 30, meta: 'Past 1 month' },
+  { key: '1y', label: '1Y', days: 365, meta: 'Past 1 year' },
+];
+
 export default function DashboardScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -22,6 +31,7 @@ export default function DashboardScreen() {
   const [recentLogs, setRecentLogs] = useState<DailyLog[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [baselines, setBaselines] = useState<PersonalBaselinesResponse | null>(null);
+  const [selectedBaselineHorizon, setSelectedBaselineHorizon] = useState<BaselineHorizonKey>('1w');
   const [refreshing, setRefreshing] = useState(false);
   const [beforeBedComplete, setBeforeBedComplete] = useState(false);
   const [afterWakeComplete, setAfterWakeComplete] = useState(false);
@@ -54,7 +64,7 @@ export default function DashboardScreen() {
     const baselinesData = await fetchPersonalBaselines();
     setBaselines(baselinesData);
 
-    const logs = await getRecentLogs(14);
+    const logs = await getRecentLogs(365);
     setRecentLogs(logs);
   };
 
@@ -134,6 +144,9 @@ export default function DashboardScreen() {
   const renderMetricsSection = () => {
     if (!baselines) return null;
 
+    const activeHorizon =
+      BASELINE_HORIZONS.find(option => option.key === selectedBaselineHorizon) ?? BASELINE_HORIZONS[1];
+    const horizonLogs = recentLogs.slice(0, activeHorizon.days).reverse();
     const metrics = baselines.baselines;
     const rows: (typeof baselines.baselines)[] = [];
     for (let i = 0; i < metrics.length; i += metricColumns) rows.push(metrics.slice(i, i + metricColumns));
@@ -142,19 +155,41 @@ export default function DashboardScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Health snapshot</Text>
-          <Text style={styles.sectionMeta}>Last 7 days</Text>
+          <Text style={styles.sectionMeta}>{activeHorizon.meta}</Text>
+        </View>
+        <View style={styles.horizonToggleRow}>
+          {BASELINE_HORIZONS.map((option) => {
+            const isActive = option.key === selectedBaselineHorizon;
+            return (
+              <TouchableOpacity
+                key={option.key}
+                style={[styles.horizonToggle, isActive && styles.horizonToggleActive]}
+                activeOpacity={0.82}
+                onPress={() => setSelectedBaselineHorizon(option.key)}
+              >
+                <Text style={[styles.horizonToggleText, isActive && styles.horizonToggleTextActive]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
         <View style={styles.metricGrid}>
           {rows.map((row, rowIdx) => (
             <View key={rowIdx} style={styles.kpiRow}>
               {row.map((baseline) => {
-                const devColor = getDeviationColor(baseline.deviation_percentage, baseline.metric);
-                const displayVal = baseline.current_value ?? baseline.baseline;
                 const isStressMetric = baseline.metric === 'stress';
 
-                const last7 = recentLogs.slice(-7);
-                const sparkVals = last7.map(log => getMetricValueFromLog(log, baseline.metric));
+                const sparkVals = horizonLogs.map(log => getMetricValueFromLog(log, baseline.metric));
                 const validVals = sparkVals.filter(v => v !== null) as number[];
+                const recentAverage = validVals.length > 0
+                  ? validVals.reduce((sum, value) => sum + value, 0) / validVals.length
+                  : null;
+                const deviationPct = recentAverage !== null && baseline.baseline
+                  ? ((recentAverage - baseline.baseline) / baseline.baseline) * 100
+                  : baseline.deviation_percentage;
+                const devColor = getDeviationColor(deviationPct, baseline.metric);
+                const displayVal = recentAverage ?? baseline.current_value ?? baseline.baseline;
                 const dataMax = validVals.length > 0
                   ? Math.max(...validVals, baseline.baseline) * 1.02
                   : baseline.baseline * 1.2;
@@ -169,12 +204,11 @@ export default function DashboardScreen() {
                     ? '#2E8B67'
                     : '#CD6C6C';
 
-                const devPct = baseline.deviation_percentage;
-                const trendText = devPct === null
+                const trendText = deviationPct === null
                   ? null
-                  : Math.abs(devPct) < 2
+                  : Math.abs(deviationPct) < 2
                     ? 'On track'
-                    : `${devPct > 0 ? 'Up' : 'Down'} ${Math.abs(devPct).toFixed(0)}%`;
+                    : `${deviationPct > 0 ? 'Up' : 'Down'} ${Math.abs(deviationPct).toFixed(0)}%`;
 
                 return (
                   <View key={baseline.metric} style={styles.kpiCard}>
@@ -525,6 +559,33 @@ const styles = StyleSheet.create({
     color: '#4C649A',
     fontSize: 13,
     fontWeight: '600',
+  },
+  horizonToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  horizonToggle: {
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#E2E6ED',
+    backgroundColor: '#F9FAFC',
+  },
+  horizonToggleActive: {
+    borderColor: '#4E8B73',
+    backgroundColor: '#EAF4F0',
+  },
+  horizonToggleText: {
+    color: '#707784',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  horizonToggleTextActive: {
+    color: '#2E6C57',
   },
   metricGrid: {
     gap: 12,

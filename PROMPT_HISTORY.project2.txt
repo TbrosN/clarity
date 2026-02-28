@@ -81,3 +81,5 @@ actually, let's not remove but just make them disabled, same with the timezone f
 so should I just set internal cron secret to some uuid? and then how do create the cron job, on the render site?
 
 can we write this cron job in JS? Im creating it in cloudfare instead but just hitting our render backend, and the only file it has is a `worker.js` by default
+
+@frontend/app/(tabs)/index.tsx:24 for these baseline graphs, let's add a toggle to switch the time horizon. Something like past 3 days, 1 week, 1 month, 1 year.
