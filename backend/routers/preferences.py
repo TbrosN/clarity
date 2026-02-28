@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from database import supabase
 from middleware.auth import get_current_user_id
 
-DEFAULT_WAKE_TIME = "07:00"
+DEFAULT_WAKE_TIME = "08:00"
 DEFAULT_WIND_DOWN_TIME = "22:30"
 
 ReminderType = Literal["wake", "wind_down"]
