@@ -11,11 +11,11 @@ from services.email_service import get_clerk_primary_email, send_resend_email
 def _build_email_for_reminder(reminder_type: str) -> dict[str, str]:
     if reminder_type == "wake":
         title = "Quick morning check-in"
-        body = "Take 2 minutes to complete your After Wake survey in Clarity."
+        body = "Take 60 seconds to complete your After Wake survey in Clarity. Your body will thank you."
         survey_type = "afterWake"
     else:
         title = "Quick evening check-in"
-        body = "Take 2 minutes to complete your Before Bed survey in Clarity."
+        body = "Take 60 seconds to complete your Before Bed survey in Clarity. Your body will thank you."
         survey_type = "beforeBed"
 
     survey_url = f"{settings.frontend_app_url}/survey?type={survey_type}"
