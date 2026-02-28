@@ -2,7 +2,7 @@
 
 **Track your energy. Discover your patterns.**
 
-[Try Clarity](https://clarity-sable-ten.vercel.app/)
+[Try Clarity](https://clarity-roan-three.vercel.app/)
 
 ## What it does
 
