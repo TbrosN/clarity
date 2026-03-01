@@ -4,15 +4,17 @@
 
 [Try Clarity](https://clarity-roan-three.vercel.app/)
 
+## Note
+This project is intended for mobile devices, although it can be used on desktop too. This was built as a PWA with Expo, with AI assistance from Cursor.
+
 ## What it does
 
-Clarity is a sleep-focused habit tracker. The app helps you understand which habits actually improve how you feel in the morning by combining:
+Clarity tracks your sleep habits and makes personalized suggestions to help you improve your sleep.
 
-- quick bedtime + wake-up surveys,
-- trend tracking over time,
-- and AI-generated insights that connect your behavior to outcomes you care about (like waking up well-rested).
-
-The project used to track a wider set of lifestyle behaviors, but now it is intentionally centered on sleep, since sleep is one of the highest-impact health levers.
+- Quick & easy bedtime + wake-up surveys,
+- AI-generated insights that connect your behavior to morning energy levels
+- Reminder emails to help you stay consistent
+- Graphs of your sleep habits and various time scales
 
 ## How to use Clarity
 
@@ -54,21 +56,4 @@ npm install
 npm run web
 ```
 
-The frontend reads `EXPO_PUBLIC_API_URL` and defaults to `http://localhost:8000` if unset.
-
-## Secrets and environment variables
-
-This repo uses environment variables for secrets and external service credentials.
-
-- Do **not** hardcode secrets in source files.
-- Keep local secrets in `backend/.env` and `frontend/.env`.
-- Do **not** commit `.env` files.
-- Set production secrets through your platform secret managers (Vercel, Render, Cloudflare), not in git.
-
-Common sensitive values include:
-
-- Clerk keys (`CLERK_SECRET_KEY`, publishable key values)
-- Supabase keys (`SUPABASE_SECRET_KEY`, project URL/keys)
-- Email provider credentials (`RESEND_API_KEY`)
-- Internal cron auth (`INTERNAL_CRON_SECRET`)
-- Optional LLM key (`LLM_API_KEY` / `AWS_BEARER_TOKEN_BEDROCK`)
+Note you may need to set some environment variables for both the frontend and backend in order to fully run this yourself. Remember to never commit sensitive variables to git.
