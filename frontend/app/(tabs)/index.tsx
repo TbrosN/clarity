@@ -17,6 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -26,7 +27,7 @@ import {
   View,
 } from "react-native";
 
-type BaselineHorizonKey = "3d" | "1w" | "1m" | "1y";
+type BaselineHorizonKey = "3d" | "1w" | "1m";
 
 const BASELINE_HORIZONS: Array<{
   key: BaselineHorizonKey;
@@ -37,7 +38,6 @@ const BASELINE_HORIZONS: Array<{
   { key: "3d", label: "3D", days: 3, meta: "Past 3 days" },
   { key: "1w", label: "1W", days: 7, meta: "Past 1 week" },
   { key: "1m", label: "1M", days: 30, meta: "Past 1 month" },
-  { key: "1y", label: "1Y", days: 365, meta: "Past 1 year" },
 ];
 
 export default function DashboardScreen() {
@@ -52,6 +52,8 @@ export default function DashboardScreen() {
   const [selectedBaselineHorizon, setSelectedBaselineHorizon] =
     useState<BaselineHorizonKey>("1w");
   const [refreshing, setRefreshing] = useState(false);
+  const [isMetricsLoading, setIsMetricsLoading] = useState(true);
+  const [isInsightsLoading, setIsInsightsLoading] = useState(true);
   const [beforeBedComplete, setBeforeBedComplete] = useState(false);
   const [afterWakeComplete, setAfterWakeComplete] = useState(false);
 
@@ -72,6 +74,9 @@ export default function DashboardScreen() {
     });
 
   const loadData = async () => {
+    setIsMetricsLoading(true);
+    setIsInsightsLoading(true);
+
     const log = await getDailyLog(today);
     setTodayLog(log);
 
@@ -93,14 +98,34 @@ export default function DashboardScreen() {
       afterWakeFields.every((f) => f !== null && f !== undefined),
     );
 
-    const generated = await generateInsights();
-    setInsights(Array.isArray(generated) ? generated : []);
+    const insightsPromise = generateInsights()
+      .then((generated) => {
+        setInsights(Array.isArray(generated) ? generated : []);
+      })
+      .catch(() => {
+        setInsights([]);
+      })
+      .finally(() => {
+        setIsInsightsLoading(false);
+      });
 
-    const baselinesData = await fetchPersonalBaselines();
-    setBaselines(baselinesData);
+    const metricsPromise = Promise.all([
+      fetchPersonalBaselines(),
+      getRecentLogs(30),
+    ])
+      .then(([baselinesData, logs]) => {
+        setBaselines(baselinesData);
+        setRecentLogs(logs);
+      })
+      .catch(() => {
+        setBaselines(null);
+        setRecentLogs([]);
+      })
+      .finally(() => {
+        setIsMetricsLoading(false);
+      });
 
-    const logs = await getRecentLogs(365);
-    setRecentLogs(logs);
+    await Promise.all([insightsPromise, metricsPromise]);
   };
 
   useFocusEffect(
@@ -186,6 +211,23 @@ export default function DashboardScreen() {
   };
 
   const renderMetricsSection = () => {
+    if (isMetricsLoading && !baselines) {
+      return (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Health snapshot</Text>
+            <Text style={styles.sectionMeta}>Loading latest trends...</Text>
+          </View>
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="small" color="#4E8B73" />
+            <Text style={styles.loadingTitle}>Building your graph view</Text>
+            <Text style={styles.loadingText}>
+              Pulling recent logs from the past month.
+            </Text>
+          </View>
+        </View>
+      );
+    }
     if (!baselines) return null;
 
     const activeHorizon =
@@ -467,6 +509,22 @@ export default function DashboardScreen() {
   );
 
   const renderInsightSection = () => {
+    if (isInsightsLoading && !topInsight) {
+      return (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Top insight</Text>
+          </View>
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="small" color="#4E8B73" />
+            <Text style={styles.loadingTitle}>Generating your top tip</Text>
+            <Text style={styles.loadingText}>
+              This usually takes a few seconds.
+            </Text>
+          </View>
+        </View>
+      );
+    }
     if (!topInsight) return null;
     const s = getInsightStyle(topInsight);
     return (
@@ -776,6 +834,24 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
+  },
+  loadingCard: {
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#E5EAF2",
+    backgroundColor: "#FBFCFE",
+    gap: 8,
+  },
+  loadingTitle: {
+    color: "#1A1D24",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  loadingText: {
+    color: "#727A87",
+    fontSize: 13,
+    fontWeight: "500",
   },
   insightCardHeader: {
     flexDirection: "row",

@@ -109,3 +109,5 @@ fastapi.exceptions.ResponseValidationError: 7 validation errors:
   (I manually added some better error propagation and logging so I could see what was going on)
 
   we should fetch/generate the insights on the home page index.ts, and then just pass them to insights.tsx as a prop. That way, we dont get lag when navigating to the insights page as we wait for them to show up
+
+  @frontend/app/(tabs)/index.tsx this page takes forever to load because we are waiting for a large db fetch for the graphs and an llm generation for the tips. While these are loading, let's show graceful loading states. Let's also reduce the max time horizon for the graphs from 1 year to 1 month @frontend/app/(tabs)/index.tsx:102
