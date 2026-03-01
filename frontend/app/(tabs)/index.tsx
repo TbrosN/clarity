@@ -9,6 +9,7 @@ import {
 import { generateInsights, Insight } from "@/services/InsightService";
 import {
   DailyLog,
+  getLocalDateKey,
   getDailyLog,
   getRecentLogs,
 } from "@/services/StorageService";
@@ -54,7 +55,7 @@ export default function DashboardScreen() {
   const [beforeBedComplete, setBeforeBedComplete] = useState(false);
   const [afterWakeComplete, setAfterWakeComplete] = useState(false);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateKey();
 
   const getGreeting = () => {
     const hour = new Date().getHours();

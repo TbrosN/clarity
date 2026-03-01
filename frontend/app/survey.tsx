@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { saveDailyLog } from '../services/StorageService';
+import { getLocalDateKey, saveDailyLog } from '../services/StorageService';
 
 type SurveyQuestion = {
   id: string;
@@ -123,7 +123,7 @@ export default function SurveyScreen() {
     if (currentStep === survey.questions.length - 1) {
       setIsSubmitting(true);
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateKey();
         await saveDailyLog({
           date: today,
           ...newAnswers,
