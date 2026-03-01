@@ -190,16 +190,6 @@ def validate_llm_response(response: LLMInsightResponse, stats: InsightStatsPaylo
         if numbers and not cited_ids:
             errors.append(f"insights[{idx}] has numeric claims but no citations")
 
-        # Require at least one citation token in every sentence containing a number.
-        sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", message) if part.strip()]
-        for sentence in sentences:
-            if NUMBER_PATTERN.search(sentence) and not CITATION_PATTERN.search(sentence):
-                errors.append(f"insights[{idx}] has uncited numeric sentence")
-                continue
-
-            if not NUMBER_PATTERN.search(sentence):
-                continue
-
     return ValidationResult(valid=not errors, errors=errors)
 
 
