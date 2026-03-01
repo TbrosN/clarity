@@ -281,7 +281,7 @@ export default function ModalScreen() {
         <View style={styles.heroBlock}>
           <Text style={styles.heroTitle}>How Clarity Works</Text>
           <Text style={styles.heroSubtitle}>
-            Two quick daily check-ins help discover the habits that influence your sleep and next-day energy.
+            Two quick daily check-ins help discover the habits that influence your sleep and next-day alertness.
           </Text>
         </View>
 
@@ -289,16 +289,16 @@ export default function ModalScreen() {
           <Text style={styles.sectionTitle}>Daily Surveys</Text>
           <View style={styles.infoCard}>
             <Text style={styles.infoCardTitle}>Evening check-in</Text>
-            <Text style={styles.infoCardMeta}>Before Bed • 5 questions</Text>
+            <Text style={styles.infoCardMeta}>Before Bed • 4 questions</Text>
             <Text style={styles.infoCardBody}>
-              Planned sleep time, last meal timing, screens before bed, caffeine intake, and stress levels.
+              Wind-down start, last meal timing, screens-off timing, and caffeine timing.
             </Text>
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoCardTitle}>Morning check-in</Text>
-            <Text style={styles.infoCardMeta}>After Wake • 6 questions</Text>
+            <Text style={styles.infoCardMeta}>After Wake • 2 questions</Text>
             <Text style={styles.infoCardBody}>
-              Actual sleep, wake time, snooze behavior, sleep quality, energy, and sleepiness.
+              Sleepiness level and morning sunlight timing.
             </Text>
           </View>
         </View>
@@ -316,12 +316,12 @@ export default function ModalScreen() {
           <Text style={styles.sectionTitle}>Personal Insights</Text>
           <View style={styles.quoteCardWarm}>
             <Text style={styles.quoteText}>
-              "Late bedtimes after 11 PM are linked to lower energy two days later."
+              "Earlier screens-off nights are linked to feeling more alert the next morning."
             </Text>
           </View>
           <View style={styles.quoteCardCool}>
             <Text style={styles.quoteText}>
-              "Turning screens off earlier improves your sleep quality trend."
+              "Morning sunlight within the first hour supports better daytime alertness."
             </Text>
           </View>
         </View>

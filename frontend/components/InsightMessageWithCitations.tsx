@@ -11,7 +11,7 @@ const NUMBER_REGEX = /(\d+\.?\d*\s*[+]?\s*(?:\/\d+|hours?|h|%|out of \d+)?)/g;
 
 type InsightMessageWithCitationsProps = {
   message: string;
-  citations?: InsightCitation[];
+  citations?: InsightCitation[] | null;
   numberColor?: string;
 };
 
@@ -27,14 +27,15 @@ const formatCitationValue = (citation: InsightCitation): string => {
 
 export default function InsightMessageWithCitations({
   message,
-  citations = [],
+  citations,
   numberColor = '#2563EB',
 }: InsightMessageWithCitationsProps) {
   const [activeFactId, setActiveFactId] = useState<string | null>(null);
+  const safeCitations = Array.isArray(citations) ? citations : [];
 
   const citationByFactId = useMemo(
-    () => new Map(citations.map((citation) => [citation.fact_id, citation])),
-    [citations]
+    () => new Map(safeCitations.map((citation) => [citation.fact_id, citation])),
+    [safeCitations]
   );
 
   const { segments, orderedFactIds } = useMemo(() => {

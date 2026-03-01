@@ -6,21 +6,15 @@ class DailyLogUpsert(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     date: date
-    wakeTime: str | None = None  # Time string (HH:mm)
-    stress: int | None = Field(default=None, ge=1, le=5)
-    sleepQuality: int | None = Field(default=None, ge=1, le=5)
+    # Before Bed survey fields
+    sleepTime: str | None = None  # "1hr" | "30mins" | "<30mins"
+    lastMeal: str | None = None  # "4" | "3" | "2" | "1"
+    screensOff: str | None = None  # "60" | "30-60" | "<30mins"
+    caffeine: str | None = None  # "before12" | "12-2pm" | "2-6pm" | "after6pm"
 
-    # Before Bed Survey fields
-    plannedSleepTime: str | None = None  # Time string (HH:mm)
-    lastMeal: str | None = None  # "3+hours" | "2-3hours" | "1-2hours" | "<1hour" | "justAte"
-    screensOff: str | None = None  # "2+hours" | "1-2hours" | "30-60min" | "<30min" | "stillUsing"
-    caffeine: str | None = None  # "none" | "before12" | "12-2pm" | "2-6pm" | "after6pm"
-
-    # After Wake Survey fields
-    actualSleepTime: str | None = None  # Time string (HH:mm)
-    snooze: str | None = None  # "noAlarm" | "no" | "1-2times" | "3+times"
-    energy: int | None = Field(default=None, ge=1, le=5)  # 1 (None) - 5 (Very high)
+    # After Wake survey fields
     sleepiness: int | None = Field(default=None, ge=1, le=5)  # 1 (Extremely sleepy) - 5 (Very alert)
+    morningLight: str | None = None  # "0-30mins" | "30-60mins" | "none"
 
 
 class ResponseValueUpdate(BaseModel):
@@ -69,28 +63,12 @@ class FactDefinition(BaseModel):
     source_metric_keys: list[str] = Field(default_factory=list)
 
 
-class CandidateInsightEvidence(BaseModel):
-    insight_id: str
-    type: str
-    title: str
-    behavior: str
-    outcome: str
-    direction: str
-    magnitude: float
-    summary: str
-    fact_ids: list[str]
-    score: float
-    action_hint: str
-
-
 class InsightStatsPayload(BaseModel):
     window_days: int
     logs_count: int
     date_start: str | None = None
     date_end: str | None = None
-    completion_rate: float
     summary_fact_ids: list[str] = Field(default_factory=list)
-    candidate_insights: list[CandidateInsightEvidence] = Field(default_factory=list)
     fact_registry: dict[str, FactDefinition] = Field(default_factory=dict)
 
 

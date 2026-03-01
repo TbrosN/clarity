@@ -1,4 +1,5 @@
 import InsightMessageWithCitations from "@/components/InsightMessageWithCitations";
+import { useInsights } from "@/contexts/InsightsContext";
 import {
   fetchPersonalBaselines,
   getMetricIcon,
@@ -40,10 +41,10 @@ const BASELINE_HORIZONS: Array<{
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const { insights, setInsights } = useInsights();
   const { width } = useWindowDimensions();
   const [todayLog, setTodayLog] = useState<DailyLog | null>(null);
   const [recentLogs, setRecentLogs] = useState<DailyLog[]>([]);
-  const [insights, setInsights] = useState<Insight[]>([]);
   const [baselines, setBaselines] = useState<PersonalBaselinesResponse | null>(
     null,
   );
@@ -74,23 +75,18 @@ export default function DashboardScreen() {
     setTodayLog(log);
 
     const beforeBedFields = [
-      log?.plannedSleepTime,
+      log?.sleepTime,
       log?.lastMeal,
       log?.screensOff,
       log?.caffeine,
-      log?.stress,
     ];
     setBeforeBedComplete(
       beforeBedFields.every((f) => f !== null && f !== undefined),
     );
 
     const afterWakeFields = [
-      log?.actualSleepTime,
-      log?.wakeTime,
-      log?.snooze,
-      log?.sleepQuality,
-      log?.energy,
       log?.sleepiness,
+      log?.morningLight,
     ];
     setAfterWakeComplete(
       afterWakeFields.every((f) => f !== null && f !== undefined),
@@ -120,10 +116,10 @@ export default function DashboardScreen() {
 
   const getDeviationColor = (
     deviationPct: number | null,
-    metricType: string,
+    _metricType: string,
   ): string => {
     if (!deviationPct) return "#9CA3AF";
-    const eff = metricType === "stress" ? -deviationPct : deviationPct;
+    const eff = deviationPct;
     if (eff >= 10) return "#10B981";
     if (eff >= 5) return "#34D399";
     if (eff <= -10) return "#EF4444";
@@ -135,39 +131,8 @@ export default function DashboardScreen() {
     log: DailyLog,
     metric: string,
   ): number | null => {
-    switch (metric) {
-      case "sleepQuality":
-        return typeof log.sleepQuality === "number" ? log.sleepQuality : null;
-      case "energy":
-        return typeof log.energy === "number" ? log.energy : null;
-      case "stress":
-        return typeof log.stress === "number" ? log.stress : null;
-      case "sleepiness":
-        return typeof log.sleepiness === "number" ? log.sleepiness : null;
-      case "sleepDuration": {
-        const sleepStr = log.actualSleepTime as string | undefined;
-        const wakeStr = log.wakeTime as string | undefined;
-        if (!sleepStr || !wakeStr) return null;
-        try {
-          const [sh, sm] = sleepStr.split(":").map(Number);
-          let wakeH: number, wakeM: number;
-          if (wakeStr.includes("T") || wakeStr.includes("Z")) {
-            const d = new Date(wakeStr);
-            wakeH = d.getHours();
-            wakeM = d.getMinutes();
-          } else {
-            [wakeH, wakeM] = wakeStr.split(":").map(Number);
-          }
-          let dur = wakeH + wakeM / 60 - (sh + sm / 60);
-          if (dur < 0) dur += 24;
-          return dur > 0 && dur < 16 ? dur : null;
-        } catch {
-          return null;
-        }
-      }
-      default:
-        return null;
-    }
+    const value = log[metric];
+    return typeof value === "number" ? value : null;
   };
 
   const surveysCompleted = [beforeBedComplete, afterWakeComplete].filter(
@@ -267,7 +232,7 @@ export default function DashboardScreen() {
           {rows.map((row, rowIdx) => (
             <View key={rowIdx} style={styles.kpiRow}>
               {row.map((baseline) => {
-                const isStressMetric = baseline.metric === "stress";
+                const isStressMetric = false;
 
                 const sparkVals = horizonLogs.map((log) =>
                   getMetricValueFromLog(log, baseline.metric),
@@ -426,6 +391,41 @@ export default function DashboardScreen() {
         <Text style={styles.sectionMeta}>Two quick check-ins</Text>
       </View>
       <View style={[styles.sectionRow, { flexDirection: surveyCardDirection }]}>
+      <TouchableOpacity
+          style={styles.surveyCard}
+          activeOpacity={0.86}
+          onPress={() => router.push("/survey?type=afterWake")}
+        >
+          <LinearGradient
+            colors={
+              afterWakeComplete
+                ? ["#4A6B5D", "#365347"]
+                : ["#6A5039", "#573E2A"]
+            }
+            style={styles.surveyCardInner}
+          >
+            <Text style={styles.surveyEmoji}></Text>
+            <Text style={styles.surveyTitle}>After Wake</Text>
+            <Text
+              style={[
+                styles.surveySubtitle,
+                { color: afterWakeComplete ? "#CBE8DA" : "#F1D6B6" },
+              ]}
+            >
+              {afterWakeComplete ? "Completed" : "2 questions"}
+            </Text>
+            <View
+              style={[
+                styles.surveyBtn,
+                { backgroundColor: afterWakeComplete ? "#5D967E" : "#8D6440" },
+              ]}
+            >
+              <Text style={styles.surveyBtnText}>
+                {afterWakeComplete ? "Edit" : "Start"}
+              </Text>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.surveyCard}
           activeOpacity={0.86}
@@ -447,7 +447,7 @@ export default function DashboardScreen() {
                 { color: beforeBedComplete ? "#B7E6D4" : "#AAB0BB" },
               ]}
             >
-              {beforeBedComplete ? "Completed" : "5 questions"}
+              {beforeBedComplete ? "Completed" : "4 questions"}
             </Text>
             <View
               style={[
@@ -457,42 +457,6 @@ export default function DashboardScreen() {
             >
               <Text style={styles.surveyBtnText}>
                 {beforeBedComplete ? "Edit" : "Start"}
-              </Text>
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.surveyCard}
-          activeOpacity={0.86}
-          onPress={() => router.push("/survey?type=afterWake")}
-        >
-          <LinearGradient
-            colors={
-              afterWakeComplete
-                ? ["#4A6B5D", "#365347"]
-                : ["#6A5039", "#573E2A"]
-            }
-            style={styles.surveyCardInner}
-          >
-            <Text style={styles.surveyEmoji}></Text>
-            <Text style={styles.surveyTitle}>After Wake</Text>
-            <Text
-              style={[
-                styles.surveySubtitle,
-                { color: afterWakeComplete ? "#CBE8DA" : "#F1D6B6" },
-              ]}
-            >
-              {afterWakeComplete ? "Completed" : "6 questions"}
-            </Text>
-            <View
-              style={[
-                styles.surveyBtn,
-                { backgroundColor: afterWakeComplete ? "#5D967E" : "#8D6440" },
-              ]}
-            >
-              <Text style={styles.surveyBtnText}>
-                {afterWakeComplete ? "Edit" : "Start"}
               </Text>
             </View>
           </LinearGradient>
@@ -509,7 +473,7 @@ export default function DashboardScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Top insight</Text>
           {insights.length > 1 && (
-            <Link href="/history" asChild>
+            <Link href="/insights" asChild>
               <TouchableOpacity activeOpacity={0.75}>
                 <Text style={styles.sectionLink}>
                   View all ({insights.length})

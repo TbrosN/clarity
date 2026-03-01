@@ -2,27 +2,17 @@ import { apiService } from './ApiService';
 
 export type DailyLog = {
   date: string; // YYYY-MM-DD
-  
-  // Sleep tracking
-  wakeTime?: string; // ISO timestamp
-  bedtime?: string; // ISO timestamp
-  sleepQuality?: number; // 1-5 Likert scale
-  
-  // Mood & Stress
-  stress?: number; // 1 (Very calm) - 5 (Very stressed)
-  
-  // Before Bed Survey fields
-  plannedSleepTime?: string; // Time string (HH:mm)
-  lastMeal?: string; // "3+hours" | "2-3hours" | "1-2hours" | "<1hour" | "justAte"
-  screensOff?: string; // "2+hours" | "1-2hours" | "30-60min" | "<30min" | "stillUsing"
-  caffeine?: string; // "none" | "before12" | "12-2pm" | "2-6pm" | "after6pm"
-  
-  // After Wake Survey fields
-  actualSleepTime?: string; // Time string (HH:mm)
-  snooze?: string; // "noAlarm" | "no" | "1-2times" | "3+times"
-  energy?: number; // 1 (None) - 5 (Very high)
+
+  // Before Bed survey fields
+  sleepTime?: string; // "1hr" | "30mins" | "<30mins"
+  lastMeal?: string; // "4" | "3" | "2" | "1"
+  screensOff?: string; // "60" | "30-60" | "<30mins"
+  caffeine?: string; // "before12" | "12-2pm" | "2-6pm" | "after6pm"
+
+  // After Wake survey fields
   sleepiness?: number; // 1 (Extremely sleepy) - 5 (Very alert)
-  
+  morningLight?: string; // "0-30mins" | "30-60mins" | "none"
+
   [key: string]: string | number | boolean | undefined;
 };
 

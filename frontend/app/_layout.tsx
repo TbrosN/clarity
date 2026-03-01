@@ -12,6 +12,7 @@ import "react-native-reanimated";
 import "../global.css";
 
 import { useColorScheme } from "@/components/useColorScheme";
+import { InsightsProvider } from "@/contexts/InsightsContext";
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { apiService } from "../services/ApiService";
@@ -106,19 +107,21 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="sso-callback" options={{ headerShown: false }} />
+      <InsightsProvider>
+        <Stack>
+          <Stack.Screen name="sso-callback" options={{ headerShown: false }} />
 
-        <Stack.Protected guard={isSignedIn}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-          <Stack.Screen name="survey" options={{ headerShown: false }} />
-        </Stack.Protected>
+          <Stack.Protected guard={isSignedIn}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+            <Stack.Screen name="survey" options={{ headerShown: false }} />
+          </Stack.Protected>
 
-        <Stack.Protected guard={!isSignedIn}>
-          <Stack.Screen name="sign-in" options={{ headerShown: false }} />
-        </Stack.Protected>
-      </Stack>
+          <Stack.Protected guard={!isSignedIn}>
+            <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+          </Stack.Protected>
+        </Stack>
+      </InsightsProvider>
     </ThemeProvider>
   );
 }

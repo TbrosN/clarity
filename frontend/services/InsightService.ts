@@ -6,7 +6,7 @@ export type Insight = {
   confidence?: 'low' | 'medium' | 'high';
   impact?: 'positive' | 'negative';
   action?: string | null;
-  citations?: InsightCitation[];
+  citations?: InsightCitation[] | null;
   source_metric_keys?: string[];
 };
 
@@ -33,18 +33,24 @@ const isInsight = (value: unknown): value is Insight => {
   );
 };
 
+const normalizeInsight = (value: Insight): Insight => ({
+  ...value,
+  citations: Array.isArray(value.citations) ? value.citations : [],
+  source_metric_keys: Array.isArray(value.source_metric_keys) ? value.source_metric_keys : [],
+});
+
 const normalizeInsights = (payload: unknown): Insight[] => {
   if (Array.isArray(payload)) {
-    return payload.filter(isInsight);
+    return payload.filter(isInsight).map(normalizeInsight);
   }
 
   if (payload && typeof payload === 'object') {
     const obj = payload as Record<string, unknown>;
     if (Array.isArray(obj.insights)) {
-      return obj.insights.filter(isInsight);
+      return obj.insights.filter(isInsight).map(normalizeInsight);
     }
     if (Array.isArray(obj.data)) {
-      return obj.data.filter(isInsight);
+      return obj.data.filter(isInsight).map(normalizeInsight);
     }
   }
 

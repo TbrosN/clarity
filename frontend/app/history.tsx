@@ -17,23 +17,15 @@ type HistoryLog = {
 };
 
 const LABELS: Record<string, string> = {
-  // Sleep tracking
-  wakeTime: 'Wake time',
-  bedtime: 'Bedtime',
-  sleepQuality: 'Sleep quality',
-  
   // Before Bed Survey
-  plannedSleepTime: 'Planned sleep time',
+  sleepTime: 'Wind-down start',
   lastMeal: 'Last meal timing',
   screensOff: 'Screens off timing',
   caffeine: 'Caffeine timing',
-  stress: 'Stress level',
-  
+
   // After Wake Survey
-  actualSleepTime: 'Actual sleep time',
-  snooze: 'Snooze behavior',
-  energy: 'Energy level',
   sleepiness: 'Sleepiness level',
+  morningLight: 'Morning light timing',
 };
 
 export default function HistoryScreen() {

@@ -33,17 +33,13 @@ export default function BaselinesScreen() {
     setRefreshing(false);
   }, []);
 
-  const getDeviationColor = (deviationPct: number | null, metricType: string): string => {
+  const getDeviationColor = (deviationPct: number | null, _metricType: string): string => {
     if (!deviationPct) return '#9CA3AF';
-    
-    // For stress, positive deviation is bad
-    const isStress = metricType === 'stress';
-    const effectiveDeviation = isStress ? -deviationPct : deviationPct;
-    
-    if (effectiveDeviation >= 10) return '#10B981'; // Green - significantly better
-    if (effectiveDeviation >= 5) return '#34D399'; // Light green - better
-    if (effectiveDeviation <= -10) return '#EF4444'; // Red - significantly worse
-    if (effectiveDeviation <= -5) return '#F87171'; // Light red - worse
+
+    if (deviationPct >= 10) return '#10B981'; // Green - significantly better
+    if (deviationPct >= 5) return '#34D399'; // Light green - better
+    if (deviationPct <= -10) return '#EF4444'; // Red - significantly worse
+    if (deviationPct <= -5) return '#F87171'; // Light red - worse
     return '#9CA3AF'; // Gray - neutral
   };
 

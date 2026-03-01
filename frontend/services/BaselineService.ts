@@ -42,34 +42,35 @@ export const fetchPersonalBaselines = async (): Promise<PersonalBaselinesRespons
 
 export const getMetricLabel = (metric: string): string => {
   const labels: Record<string, string> = {
-    sleepQuality: 'Sleep Quality',
-    energy: 'Energy Level',
-    sleepDuration: 'Sleep Duration',
-    stress: 'Stress Level',
     sleepiness: 'Alertness',
+    sleepTime: 'Wind-down Timing',
+    screensOff: 'Screens Timing',
+    caffeine: 'Caffeine Timing',
+    lastMeal: 'Meal Timing',
+    morningLight: 'Morning Light',
   };
   return labels[metric] || metric;
 };
 
 export const getMetricIcon = (metric: string): string => {
   const icons: Record<string, string> = {
-    sleepQuality: '😴',
-    energy: '⚡',
-    sleepDuration: '⏰',
-    stress: '😰',
     sleepiness: '👁️',
+    sleepTime: '🌙',
+    screensOff: '📱',
+    caffeine: '☕',
+    lastMeal: '🍽️',
+    morningLight: '☀️',
   };
   return icons[metric] || '📊';
 };
 
 export const getBehaviorIcon = (behavior: string): string => {
   const icons: Record<string, string> = {
+    sleepTime: '🌙',
     screensOff: '📱',
     caffeine: '☕',
     lastMeal: '🍽️',
-    sleepQuality: '😴',
-    sleepDuration: '⏰',
-    snooze: '⏰',
+    morningLight: '☀️',
   };
   return icons[behavior] || '📊';
 };

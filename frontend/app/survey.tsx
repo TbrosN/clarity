@@ -15,7 +15,7 @@ type SurveyQuestion = {
 const SURVEYS = {
   beforeBed: {
     title: '🌙 Start of Evening Wind-down',
-    subtitle: 'Evening check-in - 5 questions',
+    subtitle: 'Evening check-in - 4 questions',
     questions: [
       {
         id: 'q1',
@@ -49,7 +49,7 @@ const SURVEYS = {
         options: [
           { value: '60', emoji: '✨', label: '1+ hours before bed' },
           { value: '30-60', emoji: '📺', label: '30-60 mins before bed' },
-          { value: '<30mins', emoji: '�', label: '<30 mins before bed' },
+          { value: '<30mins', emoji: '📱', label: '<30 mins before bed' },
         ],
       },
       {
@@ -68,7 +68,7 @@ const SURVEYS = {
   },
   afterWake: {
     title: '☀️ After Wake-Up',
-    subtitle: 'Morning check-in - 6 questions',
+    subtitle: 'Morning check-in - 2 questions',
     questions: [
       {
         id: 'q1',

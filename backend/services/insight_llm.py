@@ -11,14 +11,11 @@ from models.logs import (
     Insight,
     InsightCitation,
     InsightStatsPayload,
-    LLMInsightDraft,
     LLMInsightResponse,
 )
 
 CITATION_PATTERN = re.compile(r"\[\[cite:([a-zA-Z0-9_.-]+)\]\]")
 NUMBER_PATTERN = re.compile(r"(?<![A-Za-z])[-+]?\d+(?:\.\d+)?%?")
-SHAMING_TERMS = ("lazy", "bad", "failure", "weak", "you should have", "your fault")
-MEDICAL_TERMS = ("diagnosis", "disorder", "disease", "clinical", "depression")
 
 
 @dataclass
@@ -27,41 +24,27 @@ class ValidationResult:
     errors: list[str]
 
 
-def _normalize_numeric_token(token: str) -> str:
-    return token.strip().replace("%", "")
-
-
-def _allowed_numeric_tokens(stats: InsightStatsPayload) -> set[str]:
-    tokens: set[str] = {
-        str(stats.window_days),
-        str(stats.logs_count),
-        str(int(round(stats.completion_rate * 100))),
-    }
-    for fact in stats.fact_registry.values():
-        if isinstance(fact.value, int | float):
-            rounded = round(float(fact.value), 2)
-            tokens.add(str(int(rounded)) if float(rounded).is_integer() else str(rounded))
-            tokens.add(f"{rounded:.1f}")
-    return tokens
-
-
 def build_prompt_payload(stats: InsightStatsPayload, max_insights: int = 4) -> dict:
     fact_registry = {
         fact_id: fact.model_dump(mode="json")
         for fact_id, fact in stats.fact_registry.items()
     }
-    candidates = [candidate.model_dump(mode="json") for candidate in stats.candidate_insights]
+    recent_survey_fact_ids = [
+        fact_id for fact_id in stats.summary_fact_ids if fact_id.startswith("fact_survey_")
+    ]
     return {
         "user_context": {
             "tracking_days_considered": stats.window_days,
             "logs_count": stats.logs_count,
-            "completion_rate": stats.completion_rate,
             "date_start": stats.date_start,
             "date_end": stats.date_end,
         },
-        "summary_fact_ids": stats.summary_fact_ids,
-        "candidate_insights": candidates,
+        "recent_survey_fact_ids": recent_survey_fact_ids,
         "fact_registry": fact_registry,
+        "task": (
+            "Generate actionable, convincing reminders grounded in the recent raw survey responses. "
+            "Highlight where the user can improve and the likely impact, and also reinforce where the user is already doing well and seeing benefits."
+        ),
         "output_contract": {
             "max_insights": max_insights,
             "required_citation_syntax": "[[cite:fact_id]]",
@@ -72,6 +55,8 @@ def build_prompt_payload(stats: InsightStatsPayload, max_insights: int = 4) -> d
                 "No criticism, blame, or shaming language.",
                 "Avoid medical diagnosis claims.",
                 "Use supportive phrasing aligned with user goals.",
+                "Use the raw response values as-is; do not assume hidden normalization.",
+                "Focus on impact-oriented reminders, not just neutral summaries.",
             ],
             "json_schema": {
                 "insights": [
@@ -89,12 +74,29 @@ def build_prompt_payload(stats: InsightStatsPayload, max_insights: int = 4) -> d
 
 def build_system_prompt() -> str:
     return (
-        "You are an empathetic sleep and energy insights assistant. "
-        "Apply Dale Carnegie style principles: never criticize, highlight user agency, "
-        "frame suggestions in terms of the user's goals, and be encouraging. "
+        "You are an empathetic sleep and alertness reminder assistant. "
+        "Write impact-oriented reminders that are actionable and persuasive while staying supportive. "
+        "Always connect behaviors to likely user outcomes (sleepiness/alertness and next-day functioning). "
+        "Use both kinds of reminders: (1) improvement opportunities and (2) reinforcement of what is already working. "
+        "Apply Dale Carnegie style principles: never criticize, highlight user agency, frame suggestions in terms of the user's goals, and be encouraging. "
+        "Each insight should focus on ONE specific behavior and its impact."
+        "Keep your insights concise and to the point."
         "You MUST output valid JSON only, with no markdown. "
-        "Every number or claim you make must include a citation `[[cite:fact_id]]`. "
-        "Use only fact_ids from the provided registry."
+        "Every number or quantitative claim must include a citation `[[cite:fact_id]]`. "
+        "Use only fact_ids from the provided registry.\n\n"
+        "Survey question definitions for interpreting raw values:\n"
+        "- sleepTime: 'When did you start your wind-down before bed?' Options: '1hr' (1 hour+ before bed), '30mins' (30-60 mins), '<30mins' (<30 mins).\n"
+        "- lastMeal: 'When was your last meal?' Options: '4' (4+ hours before bed), '3' (3-4 hours), '2' (2-3 hours), '1' (<1 hour).\n"
+        "- screensOff: 'When did you turn off screens?' Options: '60' (1+ hours before bed), '30-60' (30-60 mins), '<30mins' (<30 mins).\n"
+        "- caffeine: 'When did you last have caffeine?' Options: 'before12' (none or before 12 PM), '12-2pm', '2-6pm', 'after6pm'.\n"
+        "- sleepiness: 'How sleepy do you feel right now?' Likert 1-5 where 1 is extremely sleepy and 5 is very alert.\n"
+        "- morningLight: 'When did you get sunlight this morning?' Options: '0-30mins' (<30 mins after waking), '30-60mins', 'none'.\n"
+        "We want to encourage the user to follow these health guidlines:"
+        "- Last meal 4+ hours before bed"
+        "- Screens off and start winding down 1+ hours before bed"
+        "- Caffeine ends before 12 PM"
+        "- Get morning light within 30 minutes of waking"
+        "This should translate into feeling less tired in the morning and having more energy throughout the day."
     )
 
 
@@ -135,15 +137,23 @@ class LLMInsightsClient:
         }
         model_path = quote(self.model, safe="")
         async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-            response = await client.post(
-                f"{self.base_url}/model/{model_path}/converse",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=request_body,
-            )
-            response.raise_for_status()
+            try:
+                response = await client.post(
+                    f"{self.base_url}/model/{model_path}/converse",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=request_body,
+                )
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                status_code = exc.response.status_code
+                response_body = exc.response.text.strip()
+                body_preview = response_body[:1000] if response_body else "<empty body>"
+                raise RuntimeError(
+                    f"Bedrock converse request failed with status {status_code}: {body_preview}"
+                ) from exc
             data = response.json()
         content_blocks = data.get("output", {}).get("message", {}).get("content", [])
         content = "".join(
@@ -160,7 +170,6 @@ class LLMInsightsClient:
 def validate_llm_response(response: LLMInsightResponse, stats: InsightStatsPayload) -> ValidationResult:
     errors: list[str] = []
     allowed_fact_ids = set(stats.fact_registry.keys())
-    allowed_numeric_tokens = _allowed_numeric_tokens(stats)
 
     for idx, insight in enumerate(response.insights):
         message = insight.message_with_citations
@@ -190,21 +199,6 @@ def validate_llm_response(response: LLMInsightResponse, stats: InsightStatsPaylo
 
             if not NUMBER_PATTERN.search(sentence):
                 continue
-
-            sentence_tokens = [_normalize_numeric_token(token) for token in NUMBER_PATTERN.findall(sentence)]
-            unknown_tokens = [
-                token for token in sentence_tokens if token not in allowed_numeric_tokens
-            ]
-            if unknown_tokens:
-                errors.append(
-                    f"insights[{idx}] has numbers not grounded in allowed facts: {', '.join(unknown_tokens)}"
-                )
-
-        lowered = message.lower()
-        if any(term in lowered for term in SHAMING_TERMS):
-            errors.append(f"insights[{idx}] contains shaming language")
-        if any(term in lowered for term in MEDICAL_TERMS):
-            errors.append(f"insights[{idx}] contains medical diagnosis language")
 
     return ValidationResult(valid=not errors, errors=errors)
 
@@ -243,68 +237,4 @@ def map_to_api_insights(response: LLMInsightResponse, stats: InsightStatsPayload
             )
         )
     return output
-
-
-def build_deterministic_fallback(stats: InsightStatsPayload, max_insights: int = 4) -> list[Insight]:
-    if not stats.candidate_insights:
-        completion_fact_id = f"fact_completion_rate_{stats.window_days}d"
-        completion_fact = stats.fact_registry.get(completion_fact_id)
-        completion_citation = (
-            InsightCitation(**completion_fact.model_dump(mode="json"))
-            if completion_fact
-            else InsightCitation(
-                fact_id=completion_fact_id,
-                label=f"Survey completion rate ({stats.window_days}d)",
-                value=round(stats.completion_rate * 100, 1),
-                unit="percent",
-                window_days=stats.window_days,
-                sample_size=stats.logs_count,
-                method="observed_days / window_days",
-                provenance=f"responses in recent window {stats.date_start}..{stats.date_end}",
-                source_metric_keys=[],
-            )
-        )
-        return [
-            Insight(
-                type="tip",
-                message=(
-                    "Keep completing your daily surveys to unlock personalized insights. "
-                    f"Current completion in the last {stats.window_days} days is "
-                    f"{round(stats.completion_rate * 100)}% [[cite:{completion_fact_id}]]."
-                ),
-                citations=[completion_citation],
-            )
-        ]
-
-    insights: list[Insight] = []
-    for candidate in stats.candidate_insights[:max_insights]:
-        delta_fact_id = next((fid for fid in candidate.fact_ids if fid.endswith("_delta")), candidate.fact_ids[0])
-        mean_good_id = next((fid for fid in candidate.fact_ids if fid.endswith("_mean_good")), candidate.fact_ids[0])
-        mean_poor_id = next((fid for fid in candidate.fact_ids if fid.endswith("_mean_poor")), candidate.fact_ids[-1])
-        fact_ids = [mean_good_id, mean_poor_id, delta_fact_id]
-
-        message = (
-            f"{candidate.title} shows a {candidate.direction} pattern over the last {stats.window_days} days: "
-            f"{candidate.summary} [[cite:{delta_fact_id}]] "
-            f"({{good}} vs {{poor}}) [[cite:{mean_good_id}]] [[cite:{mean_poor_id}]]."
-        )
-        good_val = stats.fact_registry[mean_good_id].value
-        poor_val = stats.fact_registry[mean_poor_id].value
-        message = message.replace("{good}", str(good_val)).replace("{poor}", str(poor_val))
-
-        citations = [
-            InsightCitation(**stats.fact_registry[fact_id].model_dump(mode="json"))
-            for fact_id in fact_ids
-            if fact_id in stats.fact_registry
-        ]
-        insights.append(
-            Insight(
-                type=candidate.type,
-                message=message,
-                action=candidate.action_hint,
-                citations=citations,
-                source_metric_keys=sorted({key for c in citations for key in c.source_metric_keys}),
-            )
-        )
-    return insights
 
