@@ -320,8 +320,21 @@ def _safe_avg(values: list[float]) -> float:
 async def insights(user_id: str = Depends(get_current_user_id)):
     data = await history(days=settings.insights_window_days, user_id=user_id)
     logs = data["logs"]
+    user_hint = user_id[:8] if user_id else "unknown"
+    logger.info(
+        "Insights request: user=%s logs_count=%d window_days=%d",
+        user_hint,
+        len(logs),
+        settings.insights_window_days,
+    )
 
     if not settings.llm_insights_enabled or not settings.llm_api_key:
+        logger.warning(
+            "Insights fallback (LLM disabled/missing key): user=%s enabled=%s has_api_key=%s",
+            user_hint,
+            settings.llm_insights_enabled,
+            bool(settings.llm_api_key),
+        )
         return [
             Insight(
                 type="tip",
@@ -330,6 +343,15 @@ async def insights(user_id: str = Depends(get_current_user_id)):
         ]
 
     survey_results = build_recent_survey_payload(logs=logs, window_days=settings.insights_window_days, max_surveys=10)
+    logger.info(
+        "Insights payload built: user=%s logs_count=%d fact_count=%d summary_fact_count=%d date_start=%s date_end=%s",
+        user_hint,
+        survey_results.logs_count,
+        len(survey_results.fact_registry),
+        len(survey_results.summary_fact_ids),
+        survey_results.date_start,
+        survey_results.date_end,
+    )
 
     llm_client = LLMInsightsClient(
         api_key=settings.llm_api_key,
@@ -342,15 +364,41 @@ async def insights(user_id: str = Depends(get_current_user_id)):
         llm_response = await llm_client.generate(survey_results, max_insights=settings.llm_insights_max_items)
         validation = validate_llm_response(llm_response, survey_results)
         if not validation.valid:
+            logger.warning(
+                "Insights validation failed (attempt 1): user=%s errors=%s",
+                user_hint,
+                validation.errors,
+            )
             # One repair attempt as a simple retry path.
             llm_response = await llm_client.generate(survey_results, max_insights=settings.llm_insights_max_items)
             validation = validate_llm_response(llm_response, survey_results)
         if validation.valid:
             insights_with_citations = map_to_api_insights(llm_response, survey_results)
             if insights_with_citations:
+                logger.info(
+                    "Insights success: user=%s generated_count=%d",
+                    user_hint,
+                    len(insights_with_citations),
+                )
                 return insights_with_citations[: settings.llm_insights_max_items]
+            logger.warning(
+                "Insights mapping produced empty output: user=%s llm_items=%d",
+                user_hint,
+                len(llm_response.insights),
+            )
+        else:
+            logger.warning(
+                "Insights validation failed (attempt 2): user=%s errors=%s",
+                user_hint,
+                validation.errors,
+            )
     except Exception:
-        logger.exception("Error generating insights")
+        logger.exception(
+            "Error generating insights: user=%s logs_count=%d fact_count=%d",
+            user_hint,
+            survey_results.logs_count,
+            len(survey_results.fact_registry),
+        )
         return [
             Insight(
                 type="tip",
@@ -358,6 +406,12 @@ async def insights(user_id: str = Depends(get_current_user_id)):
             )
         ]
 
+    logger.warning(
+        "Insights fallback (no valid insights): user=%s logs_count=%d fact_count=%d",
+        user_hint,
+        survey_results.logs_count,
+        len(survey_results.fact_registry),
+    )
     return [
         Insight(
             type="tip",
