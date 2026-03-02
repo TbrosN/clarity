@@ -40,6 +40,14 @@ const BASELINE_HORIZONS: Array<{
   { key: "1m", label: "1M", days: 30, meta: "Past 1 month" },
 ];
 
+const ORDINAL_METRIC_SCORES: Record<string, Record<string, number>> = {
+  sleepTime: { "1hr": 3, "30mins": 2, "<30mins": 1 },
+  lastMeal: { "4": 4, "3": 3, "2": 2, "1": 1 },
+  screensOff: { "60": 3, "30-60": 2, "<30mins": 1 },
+  caffeine: { before12: 4, "12-2pm": 3, "2-6pm": 2, after6pm: 1 },
+  morningLight: { "0-30mins": 3, "30-60mins": 2, none: 1 },
+};
+
 export default function DashboardScreen() {
   const router = useRouter();
   const { insights, setInsights } = useInsights();
@@ -158,7 +166,12 @@ export default function DashboardScreen() {
     metric: string,
   ): number | null => {
     const value = log[metric];
-    return typeof value === "number" ? value : null;
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const mapped = ORDINAL_METRIC_SCORES[metric]?.[value];
+      return typeof mapped === "number" ? mapped : null;
+    }
+    return null;
   };
 
   const surveysCompleted = [beforeBedComplete, afterWakeComplete].filter(
