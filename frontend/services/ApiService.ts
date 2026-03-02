@@ -5,6 +5,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
 class ApiService {
   private client: AxiosInstance;
+  private authTokenProvider: (() => Promise<string | null>) | null = null;
 
   constructor() {
     this.client = axios.create({
@@ -12,6 +13,23 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
+    });
+
+    // Attach an auth token lazily so early requests don't race token bootstrap.
+    this.client.interceptors.request.use(async (config) => {
+      const hasAuthHeader =
+        Boolean(config.headers?.Authorization) ||
+        Boolean((config.headers as any)?.authorization);
+
+      if (!hasAuthHeader && this.authTokenProvider) {
+        const token = await this.authTokenProvider();
+        if (token) {
+          config.headers = config.headers ?? {};
+          (config.headers as any).Authorization = `Bearer ${token}`;
+        }
+      }
+
+      return config;
     });
   }
 
@@ -24,6 +42,13 @@ class ApiService {
     } else {
       delete this.client.defaults.headers.common['Authorization'];
     }
+  }
+
+  /**
+   * Set a lazy token provider used by request interceptor.
+   */
+  setAuthTokenProvider(provider: (() => Promise<string | null>) | null) {
+    this.authTokenProvider = provider;
   }
 
   /**

@@ -78,6 +78,17 @@ function RootLayoutNav() {
     }
   }, [isLoaded]);
 
+  // Register a token provider so API requests can self-heal
+  // if they fire before defaults auth header is populated.
+  useEffect(() => {
+    if (!isLoaded) {
+      apiService.setAuthTokenProvider(null);
+      return;
+    }
+
+    apiService.setAuthTokenProvider(() => getApiAuthToken(getToken));
+  }, [getToken, isLoaded]);
+
   // Set auth token when it changes
   useEffect(() => {
     const updateToken = async () => {

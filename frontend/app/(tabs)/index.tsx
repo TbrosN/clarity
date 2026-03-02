@@ -62,6 +62,7 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isMetricsLoading, setIsMetricsLoading] = useState(true);
   const [isInsightsLoading, setIsInsightsLoading] = useState(true);
+  const [isSurveyLoading, setIsSurveyLoading] = useState(true);
   const [beforeBedComplete, setBeforeBedComplete] = useState(false);
   const [afterWakeComplete, setAfterWakeComplete] = useState(false);
 
@@ -81,30 +82,38 @@ export default function DashboardScreen() {
       day: "numeric",
     });
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsMetricsLoading(true);
     setIsInsightsLoading(true);
+    setIsSurveyLoading(true);
 
-    const log = await getDailyLog(today);
-    setTodayLog(log);
+    const surveyPromise = getDailyLog(today)
+      .then((log) => {
+        setTodayLog(log);
 
-    const beforeBedFields = [
-      log?.sleepTime,
-      log?.lastMeal,
-      log?.screensOff,
-      log?.caffeine,
-    ];
-    setBeforeBedComplete(
-      beforeBedFields.every((f) => f !== null && f !== undefined),
-    );
+        const beforeBedFields = [
+          log?.sleepTime,
+          log?.lastMeal,
+          log?.screensOff,
+          log?.caffeine,
+        ];
+        setBeforeBedComplete(
+          beforeBedFields.every((f) => f !== null && f !== undefined),
+        );
 
-    const afterWakeFields = [
-      log?.sleepiness,
-      log?.morningLight,
-    ];
-    setAfterWakeComplete(
-      afterWakeFields.every((f) => f !== null && f !== undefined),
-    );
+        const afterWakeFields = [log?.sleepiness, log?.morningLight];
+        setAfterWakeComplete(
+          afterWakeFields.every((f) => f !== null && f !== undefined),
+        );
+      })
+      .catch(() => {
+        setTodayLog(null);
+        setBeforeBedComplete(false);
+        setAfterWakeComplete(false);
+      })
+      .finally(() => {
+        setIsSurveyLoading(false);
+      });
 
     const insightsPromise = generateInsights()
       .then((generated) => {
@@ -133,20 +142,20 @@ export default function DashboardScreen() {
         setIsMetricsLoading(false);
       });
 
-    await Promise.all([insightsPromise, metricsPromise]);
-  };
+    await Promise.all([surveyPromise, insightsPromise, metricsPromise]);
+  }, [today, setInsights]);
 
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, []),
+    }, [loadData]),
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
-  }, []);
+  }, [loadData]);
 
   const getDeviationColor = (
     deviationPct: number | null,
@@ -449,12 +458,15 @@ export default function DashboardScreen() {
       <View style={[styles.sectionRow, { flexDirection: surveyCardDirection }]}>
       <TouchableOpacity
           style={styles.surveyCard}
-          activeOpacity={0.86}
+          activeOpacity={isSurveyLoading ? 1 : 0.86}
+          disabled={isSurveyLoading}
           onPress={() => router.push("/survey?type=afterWake")}
         >
           <LinearGradient
             colors={
-              afterWakeComplete
+              isSurveyLoading
+                ? ["#5E6673", "#4D5562"]
+                : afterWakeComplete
                 ? ["#4A6B5D", "#365347"]
                 : ["#6A5039", "#573E2A"]
             }
@@ -465,31 +477,50 @@ export default function DashboardScreen() {
             <Text
               style={[
                 styles.surveySubtitle,
-                { color: afterWakeComplete ? "#CBE8DA" : "#F1D6B6" },
+                {
+                  color: isSurveyLoading
+                    ? "#D7DBE2"
+                    : afterWakeComplete
+                      ? "#CBE8DA"
+                      : "#F1D6B6",
+                },
               ]}
             >
-              {afterWakeComplete ? "Completed" : "2 questions"}
+              {isSurveyLoading
+                ? "Checking today's status..."
+                : afterWakeComplete
+                  ? "Completed"
+                  : "2 questions"}
             </Text>
             <View
               style={[
                 styles.surveyBtn,
-                { backgroundColor: afterWakeComplete ? "#5D967E" : "#8D6440" },
+                {
+                  backgroundColor: isSurveyLoading
+                    ? "#6F7785"
+                    : afterWakeComplete
+                      ? "#5D967E"
+                      : "#8D6440",
+                },
               ]}
             >
               <Text style={styles.surveyBtnText}>
-                {afterWakeComplete ? "Edit" : "Start"}
+                {isSurveyLoading ? "Loading" : afterWakeComplete ? "Edit" : "Start"}
               </Text>
             </View>
           </LinearGradient>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.surveyCard}
-          activeOpacity={0.86}
+          activeOpacity={isSurveyLoading ? 1 : 0.86}
+          disabled={isSurveyLoading}
           onPress={() => router.push("/survey?type=beforeBed")}
         >
           <LinearGradient
             colors={
-              beforeBedComplete
+              isSurveyLoading
+                ? ["#5E6673", "#4D5562"]
+                : beforeBedComplete
                 ? ["#304E43", "#223C35"]
                 : ["#20242C", "#171A21"]
             }
@@ -500,19 +531,35 @@ export default function DashboardScreen() {
             <Text
               style={[
                 styles.surveySubtitle,
-                { color: beforeBedComplete ? "#B7E6D4" : "#AAB0BB" },
+                {
+                  color: isSurveyLoading
+                    ? "#D7DBE2"
+                    : beforeBedComplete
+                      ? "#B7E6D4"
+                      : "#AAB0BB",
+                },
               ]}
             >
-              {beforeBedComplete ? "Completed" : "4 questions"}
+              {isSurveyLoading
+                ? "Checking today's status..."
+                : beforeBedComplete
+                  ? "Completed"
+                  : "4 questions"}
             </Text>
             <View
               style={[
                 styles.surveyBtn,
-                { backgroundColor: beforeBedComplete ? "#4E8B73" : "#343944" },
+                {
+                  backgroundColor: isSurveyLoading
+                    ? "#6F7785"
+                    : beforeBedComplete
+                      ? "#4E8B73"
+                      : "#343944",
+                },
               ]}
             >
               <Text style={styles.surveyBtnText}>
-                {beforeBedComplete ? "Edit" : "Start"}
+                {isSurveyLoading ? "Loading" : beforeBedComplete ? "Edit" : "Start"}
               </Text>
             </View>
           </LinearGradient>
