@@ -42,10 +42,10 @@ export const fetchPersonalBaselines = async (): Promise<PersonalBaselinesRespons
 
 export const getMetricLabel = (metric: string): string => {
   const labels: Record<string, string> = {
-    sleepiness: 'Alertness',
-    sleepTime: 'Wind-down Timing',
-    screensOff: 'Screens Timing',
-    caffeine: 'Caffeine Timing',
+    sleepiness: 'Morning Alertness',
+    sleepTime: 'Wind-down',
+    screensOff: 'Screens',
+    caffeine: 'Caffeine',
     lastMeal: 'Meal Timing',
     morningLight: 'Morning Light',
   };

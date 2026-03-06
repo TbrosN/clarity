@@ -48,6 +48,15 @@ const ORDINAL_METRIC_SCORES: Record<string, Record<string, number>> = {
   morningLight: { "0-30mins": 3, "30-60mins": 2, none: 1 },
 };
 
+const METRIC_MAX_SCORES: Record<string, number> = {
+  sleepiness: 5,
+  sleepTime: 3,
+  screensOff: 3,
+  caffeine: 4,
+  lastMeal: 4,
+  morningLight: 3,
+};
+
 export default function DashboardScreen() {
   const router = useRouter();
   const { insights, setInsights } = useInsights();
@@ -181,6 +190,16 @@ export default function DashboardScreen() {
       return typeof mapped === "number" ? mapped : null;
     }
     return null;
+  };
+
+  const getMetricMaxScore = (
+    metric: string,
+    fallbackValues: number[] = [],
+  ): number => {
+    const mappedMax = METRIC_MAX_SCORES[metric];
+    if (typeof mappedMax === "number") return mappedMax;
+    const fallbackMax = Math.max(...fallbackValues, 1);
+    return Number.isFinite(fallbackMax) ? fallbackMax : 1;
   };
 
   const surveysCompleted = [beforeBedComplete, afterWakeComplete].filter(
@@ -322,17 +341,19 @@ export default function DashboardScreen() {
                 );
                 const displayVal =
                   recentAverage ?? baseline.current_value ?? baseline.baseline;
-                const dataMax =
-                  validVals.length > 0
-                    ? Math.max(...validVals, baseline.baseline) * 1.02
-                    : baseline.baseline * 1.2;
-                const dataMin =
-                  validVals.length > 0
-                    ? Math.min(...validVals, baseline.baseline) * 0.88
-                    : baseline.baseline * 0.75;
-                const range = Math.max(dataMax - dataMin, 0.01);
+                const metricMax = getMetricMaxScore(baseline.metric, [
+                  ...validVals,
+                  baseline.baseline,
+                  ...(displayVal !== null ? [displayVal] : []),
+                ]);
                 const baselinePct = Math.round(
-                  ((baseline.baseline - dataMin) / range) * 100,
+                  (Math.min(Math.max(baseline.baseline, 0), metricMax) /
+                    metricMax) *
+                    100,
+                );
+                const displayPct = Math.round(
+                  (Math.min(Math.max(displayVal, 0), metricMax) / metricMax) *
+                    100,
                 );
 
                 const sparkBarColor = (val: number) =>
@@ -367,19 +388,13 @@ export default function DashboardScreen() {
                       <Text style={styles.kpiName} numberOfLines={1}>
                         {getMetricLabel(baseline.metric)}
                       </Text>
+                      <Text style={styles.kpiValue}>{displayPct}%</Text>
                     </View>
-
-                    <Text style={styles.kpiValue}>{displayVal.toFixed(1)}</Text>
-                    <Text style={styles.kpiUnit}>{baseline.unit}</Text>
 
                     <View style={styles.kpiSparkRow}>
                       <View style={styles.kpiYAxis}>
-                        <Text style={styles.kpiYLabel}>
-                          {dataMax.toFixed(1)}
-                        </Text>
-                        <Text style={styles.kpiYLabel}>
-                          {dataMin.toFixed(1)}
-                        </Text>
+                        <Text style={styles.kpiYLabel}>100%</Text>
+                        <Text style={styles.kpiYLabel}>0%</Text>
                       </View>
                       <View style={styles.kpiChartArea}>
                         <View
@@ -398,7 +413,9 @@ export default function DashboardScreen() {
                               );
                             }
                             const hp = Math.max(
-                              ((val - dataMin) / range) * 100,
+                              (Math.min(Math.max(val, 0), metricMax) /
+                                metricMax) *
+                                100,
                               4,
                             );
                             return (
@@ -969,11 +986,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   kpiEmoji: {
-    fontSize: 13,
+    fontSize: 10,
   },
   kpiName: {
     color: "#69707C",
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
     flex: 1,
     letterSpacing: 0.1,

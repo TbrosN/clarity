@@ -12,6 +12,15 @@ import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 
+const METRIC_MAX_SCORES: Record<string, number> = {
+  sleepiness: 5,
+  sleepTime: 3,
+  screensOff: 3,
+  caffeine: 4,
+  lastMeal: 4,
+  morningLight: 3,
+};
+
 export default function BaselinesScreen() {
   const [data, setData] = useState<PersonalBaselinesResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,11 +63,13 @@ export default function BaselinesScreen() {
     const deviationColor = getDeviationColor(baseline.deviation_percentage, baseline.metric);
     const hasDeviation = baseline.deviation !== null && baseline.deviation_percentage !== null;
     const recentValue = baseline.current_value;
+    const metricMax = METRIC_MAX_SCORES[baseline.metric] ?? Math.max(baseline.baseline, recentValue ?? 0, 1);
+    const baselinePct = (Math.min(Math.max(baseline.baseline, 0), metricMax) / metricMax) * 100;
+    const recentPct = recentValue !== null ? (Math.min(Math.max(recentValue, 0), metricMax) / metricMax) * 100 : null;
     const chartData = [
-      { value: baseline.baseline, label: 'Baseline', frontColor: '#64748B' },
-      ...(recentValue !== null ? [{ value: recentValue, label: 'Recent', frontColor: deviationColor }] : []),
+      { value: baselinePct, label: 'Baseline', frontColor: '#64748B' },
+      ...(recentPct !== null ? [{ value: recentPct, label: 'Recent', frontColor: deviationColor }] : []),
     ];
-    const maxChartValue = Math.max(baseline.baseline, recentValue ?? 0, 1) * 1.15;
     
     return (
       <View
@@ -79,7 +90,7 @@ export default function BaselinesScreen() {
           <BarChart
             data={chartData}
             height={120}
-            maxValue={maxChartValue}
+            maxValue={100}
             noOfSections={4}
             barWidth={30}
             spacing={30}
@@ -98,14 +109,14 @@ export default function BaselinesScreen() {
         <View className="flex-row items-center justify-between mb-1">
           <Text className="text-gray-600 text-xs">Baseline</Text>
           <Text className="text-gray-800 text-sm font-semibold">
-            {baseline.baseline.toFixed(1)} {baseline.unit}
+            {baselinePct.toFixed(0)}%
           </Text>
         </View>
 
         <View className="flex-row items-center justify-between">
           <Text className="text-gray-600 text-xs">Recent (7d)</Text>
           <Text className="text-sm font-semibold" style={{ color: recentValue !== null ? deviationColor : '#9CA3AF' }}>
-            {recentValue !== null ? `${recentValue.toFixed(1)} ${baseline.unit}` : 'No data'}
+            {recentPct !== null ? `${recentPct.toFixed(0)}%` : 'No data'}
           </Text>
         </View>
 
