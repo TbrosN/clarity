@@ -39,7 +39,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Clarity',
+          title: '',
           tabBarIcon: ({ color }: { color: string }) => <TabBarIcon name="home" color={color} />,
           headerShown: false,
         }}
@@ -47,7 +47,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="modal"
         options={{
-          title: 'Settings',
+          title: '',
           tabBarIcon: ({ color }: { color: string }) => <TabBarIcon name="cog" color={color} />,
           headerShown: false,
         }}
