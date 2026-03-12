@@ -316,8 +316,6 @@ export default function DashboardScreen() {
           {rows.map((row, rowIdx) => (
             <View key={rowIdx} style={styles.kpiRow}>
               {row.map((baseline) => {
-                const isStressMetric = false;
-
                 const sparkVals = horizonLogs.map((log) =>
                   getMetricValueFromLog(log, baseline.metric),
                 );
@@ -356,14 +354,13 @@ export default function DashboardScreen() {
                     100,
                 );
 
-                const sparkBarColor = (val: number) =>
-                  (
-                    isStressMetric
-                      ? val <= baseline.baseline
-                      : val >= baseline.baseline
-                  )
-                    ? "#2E8B67"
-                    : "#CD6C6C";
+                const sparkBarColor = (val: number) => {
+                  const normalizedPct =
+                    (Math.min(Math.max(val, 0), metricMax) / metricMax) * 100;
+                  if (normalizedPct >= 95) return "#2E8B67"; // Green: at/near 100%
+                  if (normalizedPct >= 75) return "#D5A63A"; // Yellow: close to 100%
+                  return "#CD6C6C"; // Red: below target range
+                };
 
                 const trendText =
                   deviationPct === null
