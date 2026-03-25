@@ -62,7 +62,7 @@ export default function InsightsScreen() {
     >
       <View className="mb-6">
         <Text className="text-3xl font-bold text-[#2C3E50]">Insights</Text>
-        <Text className="text-gray-500 mt-1">Your current personalized insights</Text>
+        <Text className="text-gray-500 mt-1">Core sleep tips and why they help</Text>
       </View>
 
       {insights.length === 0 ? (

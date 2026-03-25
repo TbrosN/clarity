@@ -591,9 +591,9 @@ export default function DashboardScreen() {
           </View>
           <View style={styles.loadingCard}>
             <ActivityIndicator size="small" color="#4E8B73" />
-            <Text style={styles.loadingTitle}>Generating your top tip</Text>
+            <Text style={styles.loadingTitle}>Preparing your top tip</Text>
             <Text style={styles.loadingText}>
-              This usually takes a few seconds.
+              Showing a core sleep guideline.
             </Text>
           </View>
         </View>
