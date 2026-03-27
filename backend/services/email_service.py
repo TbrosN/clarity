@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import os
 from typing import Any
 
 import httpx
@@ -46,7 +48,14 @@ async def send_resend_email(
             },
             json=payload,
         )
-        response.raise_for_status()
+        if response.status_code >= 400:
+            # Bubble up Resend's response body to make sender/recipient policy
+            # issues obvious when debugging local sends.
+            try:
+                detail = response.json()
+            except Exception:
+                detail = response.text
+            raise RuntimeError(f"Resend send failed ({response.status_code}): {detail}")
         return response.json()
 
 

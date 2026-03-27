@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     # API
     api_host: str
-    port: int
+    port: int = Field(default=8000)
     cors_origins: str
 
     # LLM insights (optional)
@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     resend_reply_to_email: str | None = None
     frontend_app_url: str = "http://localhost:8081"
     internal_cron_secret: str | None = None
-    reminder_send_window_minutes: int = Field(default=5, ge=1, le=30)
+    reminder_send_window_minutes: int = Field(default=10, ge=1, le=30)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
